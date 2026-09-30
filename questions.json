@@ -1,0 +1,36 @@
+{
+  "repechaje": [
+    { "q": "¿Cuál es el planeta más grande del sistema solar?", "o": ["Marte", "Júpiter", "Saturno", "Venus"], "a": 1 },
+    { "q": "¿Cuántos lados tiene un hexágono?", "o": ["5", "6", "7", "8"], "a": 1 },
+    { "q": "¿Cuál es el resultado de 9 x 7?", "o": ["56", "63", "72", "69"], "a": 1 }
+  ],
+  "ronda1": [
+    { "q": "¿Capital de Costa Rica?", "o": ["Heredia", "Cartago", "San José", "Alajuela"], "a": 2 },
+    { "q": "¿Cuánto es 12 + 15?", "o": ["25", "27", "29", "26"], "a": 1 },
+    { "q": "¿Qué gas respiramos principalmente?", "o": ["Oxígeno", "Nitrógeno", "Helio", "Hidrógeno"], "a": 1 },
+    { "q": "¿Cuántos días tiene una semana?", "o": ["5", "6", "7", "8"], "a": 2 },
+    { "q": "¿Qué océano baña la costa oeste de Costa Rica?", "o": ["Atlántico", "Pacífico", "Índico", "Ártico"], "a": 1 }
+  ],
+  "ronda2": [],
+  "ronda3": [],
+  "ronda4": [],
+  "ronda5": [],
+  "ronda6": [],
+  "ronda7": [],
+  "ronda8": [],
+  "ronda9": [],
+  "ronda10": [],
+  "final": [
+    { "q": "¿Quién escribió 'Don Quijote de la Mancha'?", "o": ["Cervantes", "Lope de Vega", "Quevedo", "Borges"], "a": 0 },
+    { "q": "¿Cuál es el símbolo químico del oro?", "o": ["Ag", "Au", "Or", "Go"], "a": 1 },
+    { "q": "¿Cuántos huesos tiene el cuerpo humano adulto?", "o": ["186", "206", "226", "256"], "a": 1 },
+    { "q": "¿Raíz cuadrada de 144?", "o": ["10", "11", "12", "14"], "a": 2 },
+    { "q": "¿En qué continente está Egipto?", "o": ["Asia", "Europa", "África", "Oceanía"], "a": 2 }
+  ],
+  "otras": [
+    { "q": "¿Cuál es el río más largo del mundo (comúnmente citado)?", "o": ["Nilo", "Amazonas", "Misisipi", "Yangtsé"], "a": 0 },
+    { "q": "¿Cuántos minutos tiene una hora?", "o": ["50", "60", "70", "100"], "a": 1 },
+    { "q": "¿Qué animal es el rey de la selva según el dicho popular?", "o": ["Tigre", "Elefante", "León", "Jaguar"], "a": 2 },
+    { "q": "¿Cuál es el resultado de 100 / 4?", "o": ["20", "25", "30", "40"], "a": 1 }
+  ]
+}

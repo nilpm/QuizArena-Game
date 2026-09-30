@@ -7,7 +7,8 @@
 </head><body class="pl">
 <div id="net" hidden><i data-ic="wifi-off"></i> Sin conexión… reconectando</div>
 <div id="app"></div>
-<script src="/socket.io/socket.io.js"></script>
+<script src="/sio.js"></script>
+<script>window.io || document.write('<script src="/socket.io/socket.io.js"><\/script>')</script>
 <script src="common.js"></script>
 <script src="icons.js"></script>
 <script>

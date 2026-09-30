@@ -12,7 +12,8 @@
 <div id="hq"></div>
 <div id="rt"></div>
 <div id="modal"></div>
-<script src="/socket.io/socket.io.js"></script>
+<script src="/sio.js"></script>
+<script>window.io || document.write('<script src="/socket.io/socket.io.js"><\/script>')</script>
 <script src="common.js"></script>
 <script src="icons.js"></script>
 <script>
@@ -86,12 +87,25 @@ function lobby() {
         <label><span class="lbi">${medalIc(1)} Premio</span><input class="t" id="c_p0" value="${esc(c.prizes[0])}"></label>
         <label><span class="lbi">${medalIc(2)} Premio</span><input class="t" id="c_p1" value="${esc(c.prizes[1])}"></label>
         <label><span class="lbi">${medalIc(3)} Premio</span><input class="t" id="c_p2" value="${esc(c.prizes[2])}"></label>
-      </div><button class="btn" data-q="1" style="background:#fff">${ic('edit-doc')} Preguntas</button></div>
+      </div>
+      <div class="panel bots"><h3>${ic('group')} Bots de prueba</h3>
+        <label>Cantidad<input id="b_n" type="number" min="1" max="500" value="20"></label>
+        <label class="chk"><span>Con desconexiones aleatorias</span><input id="b_f" type="checkbox"></label>
+        <div class="brow"><button class="btn" id="b_add">Agregar bots</button><button class="btn w" id="b_clr">Quitar bots</button></div>
+        <small id="b_cnt"></small></div>
+      <button class="btn" data-q="1" style="background:#fff">${ic('edit-doc')} Preguntas</button></div>
       <div><h2>Jugadores: <span id="pn"></span></h2><div class="plist" id="pl"></div></div></div>`;
-    $('#lob').onchange = () => socket.emit('host:cfg', { totalMin: $('#c_tm').value, battleSec: $('#c_bs').value, qCount: $('#c_qc').value, topQSec: $('#c_tq').value, prizes: [0, 1, 2].map(i => $('#c_p' + i).value) });
+    $('#lob').onchange = e => { if (e.target.closest('.bots')) return; socket.emit('host:cfg', { totalMin: $('#c_tm').value, battleSec: $('#c_bs').value, qCount: $('#c_qc').value, topQSec: $('#c_tq').value, prizes: [0, 1, 2].map(i => $('#c_p' + i).value) }); };
+    $('#b_add').onclick = () => {
+      const n = Math.max(1, Math.min(500, parseInt($('#b_n').value) || 1)); $('#b_n').value = n;
+      socket.emit('host:bots', { n, flaky: $('#b_f').checked });
+    };
+    $('#b_clr').onclick = () => socket.emit('host:bots:clear');
     $('#lob').querySelector('[data-q]').onclick = openQ;
   }
   $('#pn').textContent = S.players.length;
+  $('#b_cnt').textContent = S.bots ? `Bots en el lobby: ${S.bots}` : 'Aún no hay bots';
+  $('#b_clr').disabled = !S.bots;
   $('#pl').innerHTML = S.players.map(p => `<div class="${p.online ? '' : 'chip off'}">${av(p, 52)}<span>${esc(p.name)}</span></div>`).join('');
 }
 const tieTag = t => t ? `<div class="tie">${ic('scale')} Empate en puntos: ${t === 'speed' ? 'ganó quien sumó primero' : 'definido al azar ' + ic('dice')}</div>` : '';

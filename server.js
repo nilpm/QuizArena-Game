@@ -8,12 +8,19 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-// perMessageDeflate: solo comprime mensajes grandes (el estado del host); los del jugador son diminutos y no se tocan
-const io = new Server(server, { pingInterval: 10000, pingTimeout: 25000, perMessageDeflate: { threshold: 2048 } });
-let compression = null; try { compression = require('compression'); } catch (e) { /* opcional: npm i compression */ }
-if (compression) app.use(compression());                 // html/css/js/json viajan ~70% más livianos (útil con mala conexión)
-app.use(express.static(path.join(__dirname, 'public'), {
-  etag: true,                                             // html/css/js: se revalidan con 304 (casi sin bytes)
+/* ---------- rendimiento (pensado para servidores con muy poco CPU: 0.1 CPU / 512 MB) ----------
+   - Sin compresión por mensaje: gastaba mucho CPU y los mensajes de los jugadores son diminutos.
+   - Los archivos de /public se comprimen una sola vez al arrancar y se sirven desde memoria (fast-static.js).
+   - El cliente de socket.io también se sirve precomprimido, en /sio.js (si se encuentra en node_modules).
+     OJO: no puede ir bajo /socket.io/, esa ruta la intercepta la propia librería. */
+const fastStatic = require('./fast-static');
+let CLIENT_JS = null;
+try { const f = path.join(path.dirname(require.resolve('socket.io')), '..', 'client-dist', 'socket.io.min.js'); if (fs.existsSync(f)) CLIENT_JS = f; } catch (e) { /* se usa el cliente integrado */ }
+const io = new Server(server, { pingInterval: 10000, pingTimeout: 25000, perMessageDeflate: false, httpCompression: false });
+app.use(fastStatic(path.join(__dirname, 'public'), CLIENT_JS ? { '/sio.js': CLIENT_JS } : {}));
+if (!CLIENT_JS) app.get('/sio.js', (req, res) => res.redirect('/socket.io/socket.io.js'));   // respaldo: cliente integrado de socket.io
+app.use(express.static(path.join(__dirname, 'public'), {   // respaldo: mp3/png (con soporte de "Range", que Safari necesita para el audio)
+  etag: true,
   setHeaders: (res, f) => { if (/\.(mp3|png)$/i.test(f)) res.setHeader('Cache-Control', 'public, max-age=604800, immutable'); }
 }));
 
@@ -33,7 +40,12 @@ const T = process.env.FAST ? 0.1 : 1;   // FAST=1 acelera todos los tiempos (sol
 const INTRO = 5000 * T;                // cuenta regresiva antes de cada combate
 const GRACE = 20000 * T;               // tiempo para reconectar antes de perder por W.O.
 
-app.get('/qr.png', async (req, res) => res.type('png').send(await QRCode.toBuffer(publicUrl(), { width: 420, margin: 1 })));
+const qrCache = { url: '', buf: null };
+app.get('/qr.png', async (req, res) => {
+  const u = publicUrl();
+  if (qrCache.url !== u || !qrCache.buf) { qrCache.buf = await QRCode.toBuffer(u, { width: 420, margin: 1 }); qrCache.url = u; }
+  res.type('png').set('Cache-Control', 'public, max-age=300').send(qrCache.buf);
+});
 
 /* ---------- preguntas ---------- */
 let Q = {};
@@ -71,8 +83,9 @@ reset();
 
 const pub = p => ({ id: p.id, name: p.name, shape: p.shape, color: p.color, status: p.status, rscore: p.rscore, total: p.total, online: p.online, rank: p.rank });
 const P = id => G.players.get(id);
-const toP = (p, type, data = {}) => { if (p && p.bot) return botReact(p, type, data); if (p && p.sid) io.to(p.sid).emit('screen', { type, ...data }); };
-const liveMatch = id => G.stage && G.stage.matches.find(m => (m.a === id || m.b === id) && (m.state === 'intro' || m.state === 'live'));
+const toP = (p, type, data = {}) => { if (p && p.bot) return botReact(p, type, data); if (p && p.sid) { const k = io.sockets.sockets.get(p.sid); if (k) k.emit('screen', { type, ...data }); } };
+const matchOf = id => (G.stage && G.stage.mOf && G.stage.mOf.get(id)) || undefined;
+const liveMatch = id => { const m = matchOf(id); return m && (m.state === 'intro' || m.state === 'live') ? m : undefined; };
 
 function hostState() {
   const st = G.stage;
@@ -85,6 +98,7 @@ function hostState() {
       introMs: st.introEnd ? Math.max(0, st.introEnd - now()) : 0,
       matches: st.matches.map(m => ({ id: m.id, a: m.a, b: m.b, sa: m.score[m.a], sb: m.score[m.b], state: m.state, winner: m.winner, tie: m.tie }))
     },
+    bots: (() => { let n = 0; G.players.forEach(p => { if (p.bot) n++; }); return n; })(),   // para el panel de bots del lobby
     history: G.history, roundTop: G.roundTop,
     hq: G.hq && { ...G.hq, endsMs: Math.max(0, G.hq.endsAt - now()) }
   };
@@ -97,7 +111,16 @@ function hostClick() {
   clkT = setTimeout(() => { clkT = null; const n = clk; clk = 0; io.to('host').emit('clk', n); }, 80);
 }
 let ht = null;
-function pushHost() { if (ht) return; ht = setTimeout(() => { ht = null; io.to('host').emit('state', hostState()); }, 120); }
+// Con pocos jugadores el anfitrión se actualiza casi al instante; con muchos, se agrupan los cambios (hasta 0,6 s).
+// Los momentos importantes (cambio de fase, semifinales/final, donde juegan solo 2) usan el envío rápido.
+let htAt = 0;
+const pushDelay = () => (G.stage && G.stage.seq) ? 100 : Math.min(600, 120 + Math.max(0, G.players.size - 30) * 4);
+function pushHost(fast) {
+  const d = fast ? 60 : pushDelay(), at = now() + d;
+  if (ht) { if (at >= htAt) return; clearTimeout(ht); }   // ya hay un envío programado igual de pronto o antes
+  htAt = at;
+  ht = setTimeout(() => { ht = null; io.to('host').emit('state', hostState()); }, d);
+}
 
 /* ---------- pantalla de cada jugador según el estado ---------- */
 const vsInfo = (m, id, ms) => ({ a: pub(P(m.a)), b: pub(P(m.b)), me: id, ms, host: !!m.host });
@@ -108,7 +131,7 @@ function syncPlayer(p) {
   if (G.phase === 'finished') return toP(p, 'end', { rank: p.rank, prize: p.rank && p.rank <= 3 ? G.cfg.prizes[p.rank - 1] : '', total: p.total });
   if (G.phase === 'stageEnd' && p.last) return toP(p, 'result', p.last);
   if (!st) return toP(p, 'wait', { msg: 'Esperando…' });
-  const m = st.matches.find(x => x.a === p.id || x.b === p.id);
+  const m = matchOf(p.id);
   if (!m) return toP(p, 'wait', { msg: st.bye === p.id ? '😴 Descansas esta ronda: avanzas automáticamente' : (p.status === 'out' ? 'Ya no participas. ¡Mira la pantalla del anfitrión!' : 'Esperando la siguiente fase…') });
   if (m.state === 'intro') return toP(p, 'vs', vsInfo(m, p.id, Math.max(0, st.introEnd - now())));
   if (m.state === 'live') {
@@ -149,7 +172,8 @@ function buildStage(plan) {
   const matches = [];
   for (let i = 0; i < ps.length; i += 2)
     matches.push({ id: matches.length, a: ps[i].id, b: ps[i + 1].id, state: 'pending', host: !!plan.host, score: { [ps[i].id]: 0, [ps[i + 1].id]: 0 } });
-  return { ...plan, no: plan.kind === 'round' ? G.round : 0, matches, bye: bye && bye.id };
+  const mOf = new Map(); matches.forEach(m => { mOf.set(m.a, m); mOf.set(m.b, m); });
+  return { ...plan, no: plan.kind === 'round' ? G.round : 0, matches, mOf, bye: bye && bye.id };
 }
 
 function enterReady() {
@@ -159,7 +183,7 @@ function enterReady() {
   G.stage = buildStage(plan);
   G.phase = 'ready';
   G.players.forEach(syncPlayer);
-  pushHost();
+  pushHost(true);
 }
 
 function startRound() {
@@ -172,8 +196,8 @@ function startRound() {
   st.introEnd = now() + INTRO;
   ms.forEach(startIntro);
   if (st.bye && !st.seq) toP(P(st.bye), 'wait', { msg: '😴 Descansas esta ronda: avanzas automáticamente' });
-  st.timer = setTimeout(() => { G.phase = 'battle'; ms.forEach(beginBattle); pushHost(); }, INTRO);
-  pushHost();
+  st.timer = setTimeout(() => { G.phase = 'battle'; ms.forEach(beginBattle); pushHost(true); }, INTRO);
+  pushHost(true);
 }
 
 function startIntro(m) {
@@ -294,7 +318,7 @@ function endMatch(m, offlineId) {
   const st = G.stage;
   if (st.matches.every(x => x.state === 'done')) finishStage();
   else if (st.seq) G.phase = 'ready';                               // falta otro partido: el host lo inicia
-  pushHost();
+  pushHost(G.phase !== 'battle');
 }
 
 function finishStage() {
@@ -338,7 +362,7 @@ function finishStage() {
   if (G.timeUp) return finishByPoints();
   G.phase = 'stageEnd';
   G.players.forEach(syncPlayer);
-  pushHost();
+  pushHost(true);
 }
 
 function finishByPoints() {                                         // se acabó el tiempo global (o no quedan rivales)
@@ -351,7 +375,7 @@ function finish() {
   logPodium();
   G.players.forEach(p => { if (!p.rank) p.rank = G.players.size; });
   G.players.forEach(syncPlayer);
-  pushHost();
+  pushHost(true);
 }
 
 /* ---------- sockets ---------- */
@@ -371,6 +395,12 @@ io.on('connection', s => {
               prizes: [0, 1, 2].map(i => String((c.prizes || [])[i] || '').slice(0, 60)) };
     pushHost();
   }));
+  s.on('host:bots', host(d => {                          // botón "Agregar bots" del lobby
+    if (G.phase !== 'lobby') return;
+    const n = Math.min(500, 1000 - G.players.size, Math.max(0, parseInt(d && d.n) || 0));
+    if (n > 0) addBots(n, !!(d && d.flaky));
+  }));
+  s.on('host:bots:clear', host(() => { if (G.phase === 'lobby') clearBots(); }));
   s.on('host:q:get', host(() => s.emit('host:q', JSON.stringify(Q, null, 2))));
   s.on('host:q:save', host(txt => {
     try { const o = JSON.parse(txt); validateQ(o); fs.writeFileSync(QF, JSON.stringify(o, null, 2)); Q = o; s.emit('host:q:saved', { ok: true, total: poolTotal() }); }
@@ -384,7 +414,7 @@ io.on('connection', s => {
     G.players.forEach(p => clearTimeout(p.wo));
     const keep = [...G.players.values()].filter(p => p.online);
     reset(G.cfg, keep);
-    G.players.forEach(syncPlayer); pushHost();
+    G.players.forEach(syncPlayer); pushHost(true);
   }));
 
   s.on('p:join', d => {
@@ -421,7 +451,7 @@ io.on('connection', s => {
 });
 
 setInterval(() => {
-  if (G.endAt && !G.timeUp && now() >= G.endAt) { G.timeUp = true; pushHost(); }
+  if (G.endAt && !G.timeUp && now() >= G.endAt) { G.timeUp = true; pushHost(true); }
   if (G.endAt) io.to('host').emit('tick', { leftMs: Math.max(0, G.endAt - now()), timeUp: G.timeUp });
 }, 1000);
 
@@ -469,6 +499,7 @@ function addBots(n, flaky) {
   pushHost();
   console.log(`🤖 +${n} bots${flaky ? ' (con desconexiones aleatorias)' : ''}. Jugadores en total: ${G.players.size}`);
 }
+function clearBots() { [...G.players.values()].filter(p => p.bot).forEach(p => G.players.delete(p.id)); pushHost(); }
 function goOffline(p) {
   p.online = false;
   const m = liveMatch(p.id);
@@ -526,7 +557,7 @@ if (process.stdin) {
   require('readline').createInterface({ input: process.stdin }).on('line', line => {
     const [c, ...a] = line.trim().split(/\s+/);
     try {
-      if (c === 'bots' && a[0] === 'clear') { if (G.phase !== 'lobby') return console.log('⚠ Solo en el lobby.'); [...G.players.values()].filter(p => p.bot).forEach(p => G.players.delete(p.id)); pushHost(); console.log('🤖 Bots eliminados'); }
+      if (c === 'bots' && a[0] === 'clear') { if (G.phase !== 'lobby') return console.log('⚠ Solo en el lobby.'); clearBots(); console.log('🤖 Bots eliminados'); }
       else if (c === 'bots') { const n = parseInt(a[0]); n > 0 ? addBots(Math.min(n, 500), a.includes('flaky')) : console.log('Uso: bots 30  |  bots 30 flaky  |  bots clear'); }
       else if (c === 'cfg') { a.forEach(kv => { const [k, v] = kv.split('='); if (k in G.cfg && k !== 'prizes' && +v > 0) G.cfg[k] = +v; }); pushHost(); console.log('Config:', JSON.stringify(G.cfg)); }
       else if (c === 'start') startTournament(console.log);

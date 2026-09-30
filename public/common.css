@@ -340,3 +340,11 @@ body{min-height:100vh;min-height:100dvh;font-family:"Arial Rounded MT Bold","Nun
 @keyframes hgStream{0%{opacity:1;stroke-dashoffset:0}78%{opacity:1;stroke-dashoffset:-19}79%,100%{opacity:0;stroke-dashoffset:-19}}
 @keyframes hgFlip{0%,82%{transform:rotate(0)}94%{transform:rotate(190deg)}100%{transform:rotate(180deg)}}
 @keyframes wdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-11px)}}
+
+/* ===== HOST: panel "Bots de prueba" del lobby ===== */
+.hst .bots h3{margin:0 0 6px;display:flex;align-items:center;gap:8px;font-size:1.05rem}
+.hst .lob .bots input[type=checkbox]{width:24px;height:24px;padding:0;accent-color:#d68a00;cursor:pointer}
+.hst .bots .brow{display:flex;gap:10px;margin-top:10px}
+.hst .bots .btn{flex:1;padding:9px 12px;font-size:.95rem;box-shadow:0 4px 0 var(--line)}
+.hst .bots .btn:active{box-shadow:0 1px 0 var(--line)}
+.hst .bots small{display:block;margin-top:10px;font-weight:900;opacity:.65;text-align:center}

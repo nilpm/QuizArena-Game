@@ -1,6 +1,6 @@
 # 🏆 QuizArena
 
-[![CI](https://github.com/<your-user>/quizarena/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-user>/quizarena/actions/workflows/ci.yml)
+[![CI](https://github.com/nilpm/quizarena/actions/workflows/ci.yml/badge.svg)](https://github.com/nilpm/quizarena/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 ![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
 
@@ -28,7 +28,7 @@
 Requirements: [Node.js](https://nodejs.org/) 18 or newer.
 
 ```bash
-git clone https://github.com/<your-user>/quizarena.git
+git clone https://github.com/nilpm/quizarena.git
 cd quizarena
 npm install
 npm start
@@ -166,7 +166,7 @@ Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
-- Click sound: `public/buttonClickSong_V1.mp3`. Make sure you have the right to redistribute it before publishing the repository (otherwise replace it with your own or a freely licensed one).
+- Click sound: `public/buttonClickSong_V1.mp3` [Freesound](https://freesound.org/people/EdgardEdition/sounds/113636/).
 - Built with [Express](https://expressjs.com/), [Socket.IO](https://socket.io/) and [qrcode](https://github.com/soldair/node-qrcode).
 
 ## License

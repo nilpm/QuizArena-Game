@@ -19,7 +19,7 @@
 - ⚡ **Real time** with [Socket.IO](https://socket.io/): scores, bracket and reconnections update instantly.
 - 🖥️ **Host dashboard** protected by a PIN: tournament settings, question editor, bracket view and podium.
 - 🔌 **Fault tolerant**: a disconnected player has 20 s to come back before losing by walkover.
-- 🪶 **Very lightweight**: designed for servers with ~0.1 CPU / 512 MB (precompressed in-memory static files, no per-message compression).
+- 🪶 **Very lightweight**: designed for servers with ~0.1 CPU (precompressed in-memory static files, no per-message compression).
 - 🤖 **Bots and autopilot** to test a full tournament without dozens of phones.
 - 🌐 **No client-side internet dependencies**: custom inline SVG icons, no CDN or external libraries.
 

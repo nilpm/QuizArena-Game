@@ -1,152 +1,159 @@
 <!doctype html>
-<html lang="es"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Torneo</title>
-<link rel="stylesheet" href="common.css">
-</head><body class="pl">
-<div id="net" hidden><i data-ic="wifi-off"></i> Sin conexión… reconectando</div>
-<div id="app"></div>
-<script src="/sio.js"></script>
-<script>window.io || document.write('<script src="/socket.io/socket.io.js"><\/script>')</script>
-<script src="common.js"></script>
-<script src="icons.js"></script>
-<script>
-// Almacenamiento a prueba de fallos: en modo privado / cookies bloqueadas / navegadores integrados localStorage lanza error y antes rompía todo el script
-const mem = {};
-const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return mem[k] || null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { mem[k] = v; } } };
-let me = null, tick = null, cur = null, locked = false;
-const app = $('#app');
-try { me = JSON.parse(LS.get('me') || 'null'); } catch (e) {}
-if (!LS.get('pid')) LS.set('pid', 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+<html lang="es">
 
-if (!me) form();   // el formulario se muestra YA, sin esperar al servidor
-const socket = typeof io === 'function' ? io({ transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 3000 }) : { on() {}, emit() {}, connected: false };
-socket.on('connect', () => { $('#net').hidden = true; if (me) socket.emit('p:join', me); });
-socket.on('disconnect', () => { $('#net').hidden = false; });
-socket.on('connect_error', () => { if (joining) joinFail(); });
-let joining = false, joinT = null;
-function joinFail() {   // el botón vuelve a estar disponible y se avisa al usuario
-  clearTimeout(joinT); joining = false;
-  const b = $('#go'), m = $('#jm');
-  if (b) { b.disabled = false; b.textContent = b.dataset.t; }
-  if (m) { m.hidden = false; m.innerHTML = typeof io === 'function' ? ic('wifi-off') + ' No se pudo conectar con el torneo. Revisa tu internet e intenta de nuevo.' : ic('alert') + ' No cargó la librería de conexión. Recarga la página.'; }
-}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Torneo</title>
+    <link rel="stylesheet" href="common.css">
+</head>
 
-function form(edit) {
-  const sel = edit ? { shape: me.shape, color: me.color, name: me.name } : { shape: 'circle', color: COLORS[1], name: '' };
-  app.innerHTML = `<div class="form"><div class="logo">${ic(edit ? 'palette' : 'trophy')}</div><h1>${edit ? 'Edita tu personaje' : '¡Únete al torneo!'}</h1>
+<body class="pl">
+    <div id="net" hidden><i data-ic="wifi-off"></i> Sin conexión… reconectando</div>
+    <div id="app"></div>
+    <script src="/sio.js"></script>
+    <script>window.io || document.write('<script src="/socket.io/socket.io.js"><\/script>')</script>
+    <script src="common.js"></script>
+    <script src="icons.js"></script>
+    <script>
+        // Almacenamiento a prueba de fallos: en modo privado / cookies bloqueadas / navegadores integrados localStorage lanza error y antes rompía todo el script
+        const mem = {};
+        const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return mem[k] || null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { mem[k] = v; } } };
+        let me = null, tick = null, cur = null, locked = false;
+        const app = $('#app');
+        try { me = JSON.parse(LS.get('me') || 'null'); } catch (e) { }
+        if (!LS.get('pid')) LS.set('pid', 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+
+        if (!me) form();   // el formulario se muestra YA, sin esperar al servidor
+        const socket = typeof io === 'function' ? io({ transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 3000 }) : { on() { }, emit() { }, connected: false };
+        socket.on('connect', () => { $('#net').hidden = true; if (me) socket.emit('p:join', me); });
+        socket.on('disconnect', () => { $('#net').hidden = false; });
+        socket.on('connect_error', () => { if (joining) joinFail(); });
+        let joining = false, joinT = null;
+        function joinFail() {   // el botón vuelve a estar disponible y se avisa al usuario
+            clearTimeout(joinT); joining = false;
+            const b = $('#go'), m = $('#jm');
+            if (b) { b.disabled = false; b.textContent = b.dataset.t; }
+            if (m) { m.hidden = false; m.innerHTML = typeof io === 'function' ? ic('wifi-off') + ' No se pudo conectar con el torneo. Revisa tu internet e intenta de nuevo.' : ic('alert') + ' No cargó la librería de conexión. Recarga la página.'; }
+        }
+
+        function form(edit) {
+            const sel = edit ? { shape: me.shape, color: me.color, name: me.name } : { shape: 'circle', color: COLORS[1], name: '' };
+            app.innerHTML = `<div class="form"><div class="logo">${ic(edit ? 'palette' : 'trophy')}</div><h1>${edit ? 'Edita tu personaje' : '¡Únete al torneo!'}</h1>
     <label for="nm">Tu nombre</label><input id="nm" maxlength="14" placeholder="Ej: Angel" autocomplete="off" value="${esc(sel.name)}">
     <div class="prev" id="pv"></div>
     <label>Figura</label><div class="pick" id="sh"></div>
     <label>Color</label><div class="pick col" id="co"></div>
     <p id="jm" class="jm" hidden></p><button class="btn" id="go" data-t="${edit ? 'Guardar' : 'Entrar'}">${edit ? 'Guardar' : 'Entrar'}</button>${edit ? '<button class="btn w" id="cx">Cancelar</button>' : ''}</div>`;
-  const pv = () => { $('#pv').innerHTML = av({ ...sel, name: sel.name || '?' }, 120); };
-  const draw = () => {
-    pv();
-    $('#sh').innerHTML = Object.keys(SHAPES).map(k => `<button type="button" data-k="${k}" class="${sel.shape === k ? 'on' : ''}">${av({ shape: k, color: sel.color, name: sel.name || '?' }, 38)}</button>`).join('');
-    $('#co').innerHTML = COLORS.map(c => `<button type="button" data-c="${c}" style="background:${c}" class="${sel.color === c ? 'on' : ''}"></button>`).join('');
-  };
-  draw();
-  $('#nm').oninput = e => { sel.name = e.target.value; draw(); };
-  $('#nm').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('#go').click(); } };
-  app.onclick = e => {
-    const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.k) { sel.shape = b.dataset.k; draw(); }
-    else if (b.dataset.c) { sel.color = b.dataset.c; draw(); }
-    else if (b.id === 'cx') { app.onclick = null; app.innerHTML = R.lobby(); A.lobby(); }
-    else if (b.id === 'go') {
-      if (!sel.name.trim()) return $('#nm').focus();
-      if (joining) return;
-      me = { id: LS.get('pid'), name: sel.name.trim(), shape: sel.shape, color: sel.color };
-      LS.set('me', JSON.stringify(me));
-      if (edit) { app.onclick = null; socket.emit('p:update', me); app.innerHTML = R.lobby(); A.lobby(); return; }
-      joining = true; b.disabled = true; b.textContent = 'Conectando…'; $('#jm').hidden = true;
-      clearTimeout(joinT); joinT = setTimeout(joinFail, 8000);   // si en 8 s no hubo respuesta, avisa
-      socket.emit('p:join', me);
-    }
-  };
-}
+            const pv = () => { $('#pv').innerHTML = av({ ...sel, name: sel.name || '?' }, 120); };
+            const draw = () => {
+                pv();
+                $('#sh').innerHTML = Object.keys(SHAPES).map(k => `<button type="button" data-k="${k}" class="${sel.shape === k ? 'on' : ''}">${av({ shape: k, color: sel.color, name: sel.name || '?' }, 38)}</button>`).join('');
+                $('#co').innerHTML = COLORS.map(c => `<button type="button" data-c="${c}" style="background:${c}" class="${sel.color === c ? 'on' : ''}"></button>`).join('');
+            };
+            draw();
+            $('#nm').oninput = e => { sel.name = e.target.value; draw(); };
+            $('#nm').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('#go').click(); } };
+            app.onclick = e => {
+                const b = e.target.closest('button'); if (!b) return;
+                if (b.dataset.k) { sel.shape = b.dataset.k; draw(); }
+                else if (b.dataset.c) { sel.color = b.dataset.c; draw(); }
+                else if (b.id === 'cx') { app.onclick = null; app.innerHTML = R.lobby(); A.lobby(); }
+                else if (b.id === 'go') {
+                    if (!sel.name.trim()) return $('#nm').focus();
+                    if (joining) return;
+                    me = { id: LS.get('pid'), name: sel.name.trim(), shape: sel.shape, color: sel.color };
+                    LS.set('me', JSON.stringify(me));
+                    if (edit) { app.onclick = null; socket.emit('p:update', me); app.innerHTML = R.lobby(); A.lobby(); return; }
+                    joining = true; b.disabled = true; b.textContent = 'Conectando…'; $('#jm').hidden = true;
+                    clearTimeout(joinT); joinT = setTimeout(joinFail, 8000);   // si en 8 s no hubo respuesta, avisa
+                    socket.emit('p:join', me);
+                }
+            };
+        }
 
-function cd(el, ms) {
-  clearInterval(tick);
-  const end = Date.now() + ms;
-  const f = () => { el.textContent = Math.max(0, Math.ceil((end - Date.now()) / 1000)); };
-  f(); tick = setInterval(f, 200);
-}
-function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.innerHTML = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1000); }
+        function cd(el, ms) {
+            clearInterval(tick);
+            const end = Date.now() + ms;
+            const f = () => { el.textContent = Math.max(0, Math.ceil((end - Date.now()) / 1000)); };
+            f(); tick = setInterval(f, 200);
+        }
+        function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.innerHTML = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1000); }
 
 
-/* Aviso animado: la pregunta y las respuestas salen en la pantalla del anfitrión (se repite en bucle para que nadie se equivoque) */
-const MON = '<svg class="lkmon" viewBox="0 0 120 100" aria-hidden="true"><g stroke="#08141f" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="46" y="72" width="28" height="14" fill="#cfe3ee"/><rect x="30" y="85" width="60" height="9" rx="4.5" fill="#fff"/><rect x="6" y="6" width="108" height="70" rx="12" fill="#fff"/></g><rect x="14" y="14" width="92" height="54" rx="6" fill="#12263a"/><rect class="lk-q" x="22" y="20" width="76" height="13" rx="4" fill="#fff"/><rect class="lk-a lk-a1" x="22" y="38" width="36" height="12" rx="4" fill="#f0523f"/><rect class="lk-a lk-a2" x="62" y="38" width="36" height="12" rx="4" fill="#1f9d8f"/><rect class="lk-a lk-a3" x="22" y="53" width="36" height="11" rx="4" fill="#d68a00"/><rect class="lk-a lk-a4" x="62" y="53" width="36" height="11" rx="4" fill="#7b5cd6"/></svg>';
-const lkMon = c => `<div class="lkm ${c || ''}"><i class="lkr"></i><i class="lkr r2"></i>${MON}</div>`;
-const lookHost = (sub, sm) => `<div class="lk ${sm ? 'sm' : ''}">${lkMon()}<div class="lkx"><b class="lkt">¡Mira la pantalla del anfitrión!</b>${sub ? `<span class="lks">${sub}</span>` : ''}</div></div>`;
+        /* Aviso animado: la pregunta y las respuestas salen en la pantalla del anfitrión (se repite en bucle para que nadie se equivoque) */
+        const MON = '<svg class="lkmon" viewBox="0 0 120 100" aria-hidden="true"><g stroke="#08141f" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="46" y="72" width="28" height="14" fill="#cfe3ee"/><rect x="30" y="85" width="60" height="9" rx="4.5" fill="#fff"/><rect x="6" y="6" width="108" height="70" rx="12" fill="#fff"/></g><rect x="14" y="14" width="92" height="54" rx="6" fill="#12263a"/><rect class="lk-q" x="22" y="20" width="76" height="13" rx="4" fill="#fff"/><rect class="lk-a lk-a1" x="22" y="38" width="36" height="12" rx="4" fill="#f0523f"/><rect class="lk-a lk-a2" x="62" y="38" width="36" height="12" rx="4" fill="#1f9d8f"/><rect class="lk-a lk-a3" x="22" y="53" width="36" height="11" rx="4" fill="#d68a00"/><rect class="lk-a lk-a4" x="62" y="53" width="36" height="11" rx="4" fill="#7b5cd6"/></svg>';
+        const lkMon = c => `<div class="lkm ${c || ''}"><i class="lkr"></i><i class="lkr r2"></i>${MON}</div>`;
+        const lookHost = (sub, sm) => `<div class="lk ${sm ? 'sm' : ''}">${lkMon()}<div class="lkx"><b class="lkt">¡Mira la pantalla del anfitrión!</b>${sub ? `<span class="lks">${sub}</span>` : ''}</div></div>`;
 
-/* Reloj de arena animado para las pantallas de espera: la arena cae, se voltea solo y vuelve a empezar (mismo estilo que el aviso del anfitrión) */
-const HG = '<svg class="hgs" viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="hgc"><path d="M13 10h22c0 9-6 11-6 14s6 5 6 14H13c0-9 6-11 6-14s-6-5-6-14z"/></clipPath></defs><g class="hgf" stroke="#08141f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M13 10h22c0 9-6 11-6 14s6 5 6 14H13c0-9 6-11 6-14s-6-5-6-14z" fill="#e8f4f8"/><g clip-path="url(#hgc)" stroke="none"><rect class="hg-t" x="9" y="10" width="30" height="14" fill="#ffc93c"/><rect class="hg-b" x="9" y="24" width="30" height="14" fill="#ffc93c"/></g><line class="hg-s" x1="24" y1="23" x2="24" y2="37" stroke="#ffc93c" stroke-width="1.8"/><path d="M16.5 13.5c.6 3 2 4.6 3.6 6" fill="none" stroke="#fff" stroke-width="2" opacity=".85"/><path d="M13 10h22c0 9-6 11-6 14s6 5 6 14H13c0-9 6-11 6-14s-6-5-6-14z" fill="none"/><rect x="9" y="4" width="30" height="6" rx="2" fill="#8b5a2b"/><rect x="9" y="38" width="30" height="6" rx="2" fill="#8b5a2b"/></g></svg>';
-const hgWait = () => `<div class="lkm hgm"><i class="lkr"></i><i class="lkr r2"></i>${HG}</div>`;
-const wdots = '<div class="wdots"><i></i><i></i><i></i></div>';
+        /* Reloj de arena animado para las pantallas de espera: la arena cae, se voltea solo y vuelve a empezar (mismo estilo que el aviso del anfitrión) */
+        const HG = '<svg class="hgs" viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="hgc"><path d="M13 10h22c0 9-6 11-6 14s6 5 6 14H13c0-9 6-11 6-14s-6-5-6-14z"/></clipPath></defs><g class="hgf" stroke="#08141f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M13 10h22c0 9-6 11-6 14s6 5 6 14H13c0-9 6-11 6-14s-6-5-6-14z" fill="#e8f4f8"/><g clip-path="url(#hgc)" stroke="none"><rect class="hg-t" x="9" y="10" width="30" height="14" fill="#ffc93c"/><rect class="hg-b" x="9" y="24" width="30" height="14" fill="#ffc93c"/></g><line class="hg-s" x1="24" y1="23" x2="24" y2="37" stroke="#ffc93c" stroke-width="1.8"/><path d="M16.5 13.5c.6 3 2 4.6 3.6 6" fill="none" stroke="#fff" stroke-width="2" opacity=".85"/><path d="M13 10h22c0 9-6 11-6 14s6 5 6 14H13c0-9 6-11 6-14s-6-5-6-14z" fill="none"/><rect x="9" y="4" width="30" height="6" rx="2" fill="#8b5a2b"/><rect x="9" y="38" width="30" height="6" rx="2" fill="#8b5a2b"/></g></svg>';
+        const hgWait = () => `<div class="lkm hgm"><i class="lkr"></i><i class="lkr r2"></i>${HG}</div>`;
+        const wdots = '<div class="wdots"><i></i><i></i><i></i></div>';
 
-const R = {
-  lobby: () => `<div class="c"><div class="pop">${av(me, 150)}</div><h1>${esc(me.name)}</h1><p>¡Estás dentro! Espera a que el anfitrión inicie el torneo…</p><button class="btn w" id="ed">${ic('pencil')} Cambiar nombre, figura o color</button></div>`,
-  wait: d => `<div class="c">${d.look ? lkMon('big') : hgWait()}<h2>${tx(d.msg)}</h2>${d.look ? '' : wdots}</div>`,
-  denied: () => `<div class="c"><div class="big">${ic('block')}</div><h2>El torneo ya comenzó</h2><p>Espera al próximo torneo.</p></div>`,
-  vs: d => {
-    const side = (p, c) => `<div class="side ${c} ${p.id === d.me ? 'me' : ''}">${av(p, 110)}<span>${esc(p.name)}</span></div>`;
-    return `<div class="c"><div class="vs">${side(d.a, 'l')}<div class="vsx">VS</div>${side(d.b, 'r')}</div>
+        const R = {
+            lobby: () => `<div class="c"><div class="pop">${av(me, 150)}</div><h1>${esc(me.name)}</h1><p>¡Estás dentro! Espera a que el anfitrión inicie el torneo…</p><button class="btn w" id="ed">${ic('pencil')} Cambiar nombre, figura o color</button></div>`,
+            wait: d => `<div class="c">${d.look ? lkMon('big') : hgWait()}<h2>${tx(d.msg)}</h2>${d.look ? '' : wdots}</div>`,
+            denied: () => `<div class="c"><div class="big">${ic('block')}</div><h2>El torneo ya comenzó</h2><p>Espera al próximo torneo.</p></div>`,
+            vs: d => {
+                const side = (p, c) => `<div class="side ${c} ${p.id === d.me ? 'me' : ''}">${av(p, 110)}<span>${esc(p.name)}</span></div>`;
+                return `<div class="c"><div class="vs">${side(d.a, 'l')}<div class="vsx">VS</div>${side(d.b, 'r')}</div>
       <p style="margin-top:28px">${d.host ? '' : 'Responde a las preguntas en el menor tiempo que puedas'}</p>${d.host ? lookHost('La pregunta y las respuestas saldrán allí. Aquí solo tocarás tu letra.') : ''}<div class="cnt" id="c"></div></div>`;
-  },
-  question: d => `<div class="q"><div class="top"><span>Pregunta ${d.n}/${d.total}</span><b id="t"></b><span>${ic('star')} <i id="sc">${d.score}</i></span></div>
+            },
+            question: d => `<div class="q"><div class="top"><span>Pregunta ${d.n}/${d.total}</span><b id="t"></b><span>${ic('star')} <i id="sc">${d.score}</i></span></div>
     <div class="tbar"><i id="tb"></i></div><h2 class="qt">${tx(d.text)}</h2>
     <div class="opts">${d.opts.map((o, i) => `<button class="o" data-i="${i}" style="background:${OPT[i].c}"><em>${OPT[i].s}</em>${tx(o)}</button>`).join('')}</div></div>`,
-  pad: d => `<div class="q lkq"><div class="top"><span>Pregunta ${d.n}/${d.total}</span><b id="t"></b><span>${ic('eye')} Anfitrión</span></div>
+            pad: d => `<div class="q lkq"><div class="top"><span>Pregunta ${d.n}/${d.total}</span><b id="t"></b><span>${ic('eye')} Anfitrión</span></div>
     ${lookHost('La pregunta y las respuestas salen allí. Aquí solo toca tu letra.', 1)}<div class="tbar"><i id="tb"></i></div><div class="opts pad">${Array.from({ length: d.count }, (_, i) => `<button class="o" data-i="${i}" style="background:${OPT[i].c}">${OPT[i].s}</button>`).join('')}</div></div>`,
-  result: d => `<div class="res ${d.cls}"><div class="pop">${av(me, 110)}</div><h1>${tx(d.title)}</h1><h2>${tx(d.sub)}</h2><p>Esperando al anfitrión…</p></div>`,
-  end: d => {
-    const medal = d.rank <= 3 ? medalIc(d.rank) : ic('party');
-    return `<div class="res ${d.rank <= 3 ? 'win' : 'rep'}"><div class="big">${medal}</div><h1>Top ${d.rank}</h1>
+            result: d => `<div class="res ${d.cls}"><div class="pop">${av(me, 110)}</div><h1>${tx(d.title)}</h1><h2>${tx(d.sub)}</h2><p>Esperando al anfitrión…</p></div>`,
+            end: d => {
+                const medal = d.rank <= 3 ? medalIc(d.rank) : ic('party');
+                return `<div class="res ${d.rank <= 3 ? 'win' : 'rep'}"><div class="big">${medal}</div><h1>Top ${d.rank}</h1>
       ${d.rank <= 3 ? `<h2>${['', '¡Campeón!', '¡Subcampeón!', '¡Tercer lugar!'][d.rank]}</h2>${d.prize ? `<div class="prize">${ic('gift')} ${tx(d.prize)}</div>` : ''}` :
-        `<h2>¡Felicitaciones por llegar al Top ${d.rank}!</h2>`}
+                        `<h2>¡Felicitaciones por llegar al Top ${d.rank}!</h2>`}
       <p>Puntos acumulados: ${d.total}</p></div>`;
-  }
-};
-const A = {
-  lobby: () => { app.onclick = e => { if (e.target.closest('#ed')) form(true); }; },
-  vs: d => cd($('#c'), d.ms),
-  question: d => { cd($('#t'), d.ms); barAnim($('#tb'), d.ms, d.tot); bindOpts(); },
-  pad: d => { cd($('#t'), d.ms); barAnim($('#tb'), d.ms, d.tot); bindOpts(); try { navigator.vibrate && navigator.vibrate([70, 50, 70]); } catch (e) {} }   // vibra para avisar que hay que mirar al anfitrión
-};
-function bindOpts() {
-  locked = false;
-  document.querySelectorAll('.o').forEach(b => b.onclick = () => {
-    if (locked) return; if (!socket.connected) { $('#net').hidden = false; return; } locked = true; Snd.play({ fb: true }); navigator.vibrate && navigator.vibrate(25);   // sonido local e inmediato: no depende de la red
-    b.classList.add('sel');
-    document.querySelectorAll('.o').forEach(x => { if (x !== b) x.classList.add('dim'); });
-    socket.emit('answer', +b.dataset.i);
-  });
-}
+            }
+        };
+        const A = {
+            lobby: () => { app.onclick = e => { if (e.target.closest('#ed')) form(true); }; },
+            vs: d => cd($('#c'), d.ms),
+            question: d => { cd($('#t'), d.ms); barAnim($('#tb'), d.ms, d.tot); bindOpts(); },
+            pad: d => { cd($('#t'), d.ms); barAnim($('#tb'), d.ms, d.tot); bindOpts(); try { navigator.vibrate && navigator.vibrate([70, 50, 70]); } catch (e) { } }   // vibra para avisar que hay que mirar al anfitrión
+        };
+        function bindOpts() {
+            locked = false;
+            document.querySelectorAll('.o').forEach(b => b.onclick = () => {
+                if (locked) return; if (!socket.connected) { $('#net').hidden = false; return; } locked = true; Snd.play({ fb: true }); navigator.vibrate && navigator.vibrate(25);   // sonido local e inmediato: no depende de la red
+                b.classList.add('sel');
+                document.querySelectorAll('.o').forEach(x => { if (x !== b) x.classList.add('dim'); });
+                socket.emit('answer', +b.dataset.i);
+            });
+        }
 
-socket.on('screen', d => {
-  clearTimeout(joinT); joining = false;
-  if (d.type === 'feedback') {
-    if (!d.pad && cur && cur.type === 'question') {           // marca acierto/error sobre la misma pantalla
-      document.querySelectorAll('.o').forEach(b => {
-        const i = +b.dataset.i; b.classList.remove('dim', 'sel');
-        b.classList.add(i === d.correct ? 'ok' : (i === d.chosen ? 'bad' : 'dim'));
-      });
-      $('#sc').textContent = d.score;
-      toast(d.ok ? '+' + d.pts : ic('close'));
-      return;
-    }
-    clearInterval(tick);
-    app.innerHTML = `<div class="res ${d.ok ? 'win' : 'out'}"><div class="big">${ic(d.ok ? 'check-circle' : 'close-circle')}</div><h1>${d.ok ? '+' + d.pts : (d.chosen == null ? 'Sin respuesta' : 'Incorrecto')}</h1><p>Total del combate: ${d.score}</p></div>`;
-    return;
-  }
-  clearInterval(tick);
-  cur = d;
-  app.onclick = null;
-  app.innerHTML = (R[d.type] || R.wait)(d);
-  if (A[d.type]) A[d.type](d);
-  if (d.type === 'end' && d.rank <= 3) confetti();
-});
-</script></body></html>
+        socket.on('screen', d => {
+            clearTimeout(joinT); joining = false;
+            if (d.type === 'feedback') {
+                if (!d.pad && cur && cur.type === 'question') {           // marca acierto/error sobre la misma pantalla
+                    document.querySelectorAll('.o').forEach(b => {
+                        const i = +b.dataset.i; b.classList.remove('dim', 'sel');
+                        b.classList.add(i === d.correct ? 'ok' : (i === d.chosen ? 'bad' : 'dim'));
+                    });
+                    $('#sc').textContent = d.score;
+                    toast(d.ok ? '+' + d.pts : ic('close'));
+                    return;
+                }
+                clearInterval(tick);
+                app.innerHTML = `<div class="res ${d.ok ? 'win' : 'out'}"><div class="big">${ic(d.ok ? 'check-circle' : 'close-circle')}</div><h1>${d.ok ? '+' + d.pts : (d.chosen == null ? 'Sin respuesta' : 'Incorrecto')}</h1><p>Total del combate: ${d.score}</p></div>`;
+                return;
+            }
+            clearInterval(tick);
+            cur = d;
+            app.onclick = null;
+            app.innerHTML = (R[d.type] || R.wait)(d);
+            if (A[d.type]) A[d.type](d);
+            if (d.type === 'end' && d.rank <= 3) confetti();
+        });
+    </script>
+</body>
+
+</html>

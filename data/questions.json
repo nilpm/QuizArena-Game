@@ -1,0 +1,96 @@
+{
+  "repechaje": [
+    { "q": "¿Cuál es la capital de Japón?", "o": ["Kioto", "Tokio", "Osaka", "Hiroshima"], "a": 1 },
+    { "q": "¿Qué planeta es conocido como el planeta rojo?", "o": ["Venus", "Marte", "Mercurio", "Neptuno"], "a": 1 },
+    { "q": "¿Cuál es el idioma más hablado del mundo por número de hablantes nativos?", "o": ["Inglés", "Español", "Chino mandarín", "Hindi"], "a": 2 }
+  ],
+  "ronda1": [
+    { "q": "¿Cuál es la capital de Francia?", "o": ["Madrid", "París", "Roma", "Berlín"], "a": 1 },
+    { "q": "¿Qué océano es el más grande del planeta?", "o": ["Atlántico", "Índico", "Pacífico", "Ártico"], "a": 2 },
+    { "q": "¿Quién pintó la Mona Lisa?", "o": ["Vincent van Gogh", "Leonardo da Vinci", "Pablo Picasso", "Miguel Ángel"], "a": 1 },
+    { "q": "¿Cuál es el continente más grande?", "o": ["África", "Europa", "Asia", "América"], "a": 2 },
+    { "q": "¿Qué instrumento tiene normalmente 88 teclas?", "o": ["Violín", "Piano", "Guitarra", "Flauta"], "a": 1 }
+  ],
+  "ronda2": [
+    { "q": "¿Cuál es el país más grande del mundo por superficie?", "o": ["Canadá", "China", "Estados Unidos", "Rusia"], "a": 3 },
+    { "q": "¿Qué científico formuló la teoría de la relatividad?", "o": ["Isaac Newton", "Albert Einstein", "Galileo Galilei", "Nikola Tesla"], "a": 1 },
+    { "q": "¿Cuál es el símbolo químico de la plata?", "o": ["Pt", "Ag", "Au", "Pb"], "a": 1 },
+    { "q": "¿En qué país se encuentran las pirámides de Guiza?", "o": ["México", "Perú", "Egipto", "Grecia"], "a": 2 },
+    { "q": "¿Cuál es el órgano más grande del cuerpo humano?", "o": ["El corazón", "El hígado", "La piel", "El pulmón"], "a": 2 }
+  ],
+  "ronda3": [
+    { "q": "¿Qué civilización construyó Machu Picchu?", "o": ["Maya", "Azteca", "Inca", "Romana"], "a": 2 },
+    { "q": "¿Cuál es la moneda oficial del Reino Unido?", "o": ["Euro", "Libra esterlina", "Dólar", "Franco"], "a": 1 },
+    { "q": "¿Qué elemento químico tiene el símbolo Fe?", "o": ["Flúor", "Hierro", "Francio", "Fósforo"], "a": 1 },
+    { "q": "¿Cuál es el desierto cálido más grande del mundo?", "o": ["Gobi", "Sahara", "Atacama", "Kalahari"], "a": 1 },
+    { "q": "¿Quién escribió 'Romeo y Julieta'?", "o": ["William Shakespeare", "Charles Dickens", "Oscar Wilde", "Jane Austen"], "a": 0 }
+  ],
+  "ronda4": [
+    { "q": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?", "o": ["K2", "Monte Everest", "Kangchenjunga", "Mont Blanc"], "a": 1 },
+    { "q": "¿En qué año llegó el ser humano a la Luna por primera vez?", "o": ["1959", "1965", "1969", "1972"], "a": 2 },
+    { "q": "¿Cuál es la capital de Australia?", "o": ["Sídney", "Melbourne", "Canberra", "Brisbane"], "a": 2 },
+    { "q": "¿Qué planeta tiene los anillos más conocidos del sistema solar?", "o": ["Júpiter", "Saturno", "Urano", "Neptuno"], "a": 1 },
+    { "q": "¿Cuál es el país conocido como la Tierra del Sol Naciente?", "o": ["China", "Corea del Sur", "Japón", "Tailandia"], "a": 2 }
+  ],
+  "ronda5": [
+    { "q": "¿Qué filósofo fue maestro de Alejandro Magno?", "o": ["Sócrates", "Platón", "Aristóteles", "Pitágoras"], "a": 2 },
+    { "q": "¿Cuál es el río más largo de Europa?", "o": ["Danubio", "Rin", "Volga", "Sena"], "a": 2 },
+    { "q": "¿Qué país tiene forma aproximada de bota?", "o": ["Grecia", "Italia", "Portugal", "Croacia"], "a": 1 },
+    { "q": "¿Cuál es el mamífero más grande del planeta?", "o": ["Elefante africano", "Ballena azul", "Jirafa", "Orca"], "a": 1 },
+    { "q": "¿Qué compositor creó la Novena Sinfonía?", "o": ["Mozart", "Beethoven", "Bach", "Chopin"], "a": 1 }
+  ],
+  "ronda6": [
+    { "q": "¿Cuál fue la capital del Imperio bizantino?", "o": ["Roma", "Atenas", "Constantinopla", "Alejandría"], "a": 2 },
+    { "q": "¿Qué país posee la mayor cantidad de islas del mundo?", "o": ["Indonesia", "Suecia", "Filipinas", "Japón"], "a": 1 },
+    { "q": "¿Cuál es el gas más abundante en la atmósfera terrestre?", "o": ["Oxígeno", "Nitrógeno", "Dióxido de carbono", "Argón"], "a": 1 },
+    { "q": "¿Quién desarrolló la primera vacuna contra la viruela?", "o": ["Edward Jenner", "Louis Pasteur", "Alexander Fleming", "Robert Koch"], "a": 0 },
+    { "q": "¿Cuál es la capital de Mongolia?", "o": ["Astaná", "Ulán Bator", "Taskent", "Biskek"], "a": 1 }
+  ],
+  "ronda7": [
+    { "q": "¿Qué tratado puso fin oficialmente a la Primera Guerra Mundial entre Alemania y los Aliados?", "o": ["Tratado de París", "Tratado de Versalles", "Tratado de Roma", "Tratado de Viena"], "a": 1 },
+    { "q": "¿Cuál es el lago de agua dulce más grande del mundo por superficie?", "o": ["Lago Victoria", "Lago Superior", "Lago Baikal", "Lago Tanganica"], "a": 1 },
+    { "q": "¿Qué escritor creó al detective Sherlock Holmes?", "o": ["Agatha Christie", "Arthur Conan Doyle", "Jules Verne", "H. G. Wells"], "a": 1 },
+    { "q": "¿Cuál es el metal cuyo símbolo químico es Hg?", "o": ["Mercurio", "Magnesio", "Manganeso", "Molibdeno"], "a": 0 },
+    { "q": "¿Qué país fue conocido históricamente como Persia?", "o": ["Irak", "Irán", "Siria", "Turquía"], "a": 1 }
+  ],
+  "ronda8": [
+    { "q": "¿Cuál es la capital de Islandia?", "o": ["Oslo", "Helsinki", "Reikiavik", "Estocolmo"], "a": 2 },
+    { "q": "¿Qué científico descubrió la penicilina?", "o": ["Alexander Fleming", "Marie Curie", "Gregor Mendel", "Louis Pasteur"], "a": 0 },
+    { "q": "¿Cuál es el país más poblado del mundo según las estimaciones actuales?", "o": ["China", "India", "Estados Unidos", "Indonesia"], "a": 1 },
+    { "q": "¿Qué famosa ciudad antigua fue sepultada por la erupción del Vesubio en el año 79?", "o": ["Pompeya", "Cartago", "Esparta", "Troya"], "a": 0 },
+    { "q": "¿Qué planeta del sistema solar tiene el día más largo?", "o": ["Venus", "Mercurio", "Marte", "Júpiter"], "a": 0 }
+  ],
+  "ronda9": [
+    { "q": "¿Cuál es la capital de Etiopía?", "o": ["Nairobi", "Addis Abeba", "Jartum", "Kampala"], "a": 1 },
+    { "q": "¿Qué filósofo escribió 'La República'?", "o": ["Aristóteles", "Platón", "Sócrates", "Epicuro"], "a": 1 },
+    { "q": "¿Cuál es el punto más profundo conocido de los océanos?", "o": ["Fosa de Java", "Fosa de las Marianas", "Fosa de Tonga", "Fosa de Puerto Rico"], "a": 1 },
+    { "q": "¿Qué artista es famoso por la obra 'La noche estrellada'?", "o": ["Claude Monet", "Vincent van Gogh", "Salvador Dalí", "Edvard Munch"], "a": 1 },
+    { "q": "¿Cuál es la lengua oficial de Brasil?", "o": ["Español", "Portugués", "Francés", "Italiano"], "a": 1 }
+  ],
+  "ronda10": [
+    { "q": "¿Qué imperio construyó una extensa red de caminos en Sudamérica?", "o": ["Imperio romano", "Imperio azteca", "Imperio inca", "Imperio persa"], "a": 2 },
+    { "q": "¿Cuál es la capital de Nueva Zelanda?", "o": ["Auckland", "Wellington", "Christchurch", "Hamilton"], "a": 1 },
+    { "q": "¿Qué científico propuso las leyes del movimiento y la gravitación universal?", "o": ["Galileo Galilei", "Isaac Newton", "Johannes Kepler", "Albert Einstein"], "a": 1 },
+    { "q": "¿Cuál es el país con mayor superficie de África?", "o": ["Sudán", "Egipto", "Argelia", "República Democrática del Congo"], "a": 2 },
+    { "q": "¿Qué civilización desarrolló la escritura cuneiforme?", "o": ["Egipcia", "Sumeria", "Romana", "Griega"], "a": 1 }
+  ],
+  "final": [
+    { "q": "¿Cuál es el elemento químico más abundante del universo?", "o": ["Oxígeno", "Carbono", "Hidrógeno", "Helio"], "a": 2 },
+    { "q": "¿Quién fue el primer emperador de Roma?", "o": ["Julio César", "Nerón", "Augusto", "Trajano"], "a": 2 },
+    { "q": "¿Cuál es la capital de Kazajistán?", "o": ["Almaty", "Astaná", "Biskek", "Dusambé"], "a": 1 },
+    { "q": "¿Qué escritor colombiano ganó el Premio Nobel de Literatura en 1982?", "o": ["Jorge Luis Borges", "Gabriel García Márquez", "Mario Vargas Llosa", "Pablo Neruda"], "a": 1 },
+    { "q": "¿Cuál es la velocidad aproximada de la luz en el vacío?", "o": ["30.000 km/s", "300.000 km/s", "3.000.000 km/s", "150.000 km/s"], "a": 1 }
+  ],
+  "otras": [
+    { "q": "¿Cuál es la capital de Canadá?", "o": ["Toronto", "Vancouver", "Ottawa", "Montreal"], "a": 2 },
+    { "q": "¿Qué animal es conocido por cambiar de color para camuflarse?", "o": ["Camaleón", "Pingüino", "Canguro", "Cisne"], "a": 0 },
+    { "q": "¿Cuántos continentes se consideran tradicionalmente en el modelo de siete continentes?", "o": ["5", "6", "7", "8"], "a": 2 },
+    { "q": "¿Cuál es el idioma oficial de Austria?", "o": ["Alemán", "Francés", "Italiano", "Neerlandés"], "a": 0 },
+    { "q": "¿Qué país regaló la Estatua de la Libertad a Estados Unidos?", "o": ["Reino Unido", "Francia", "España", "Italia"], "a": 1 },
+    { "q": "¿Cuál es el planeta más cercano al Sol?", "o": ["Venus", "Mercurio", "Marte", "Tierra"], "a": 1 },
+    { "q": "¿Qué órgano bombea la sangre por todo el cuerpo?", "o": ["Pulmón", "Cerebro", "Corazón", "Riñón"], "a": 2 },
+    { "q": "¿En qué país se encuentra la ciudad de Petra?", "o": ["Jordania", "Israel", "Líbano", "Siria"], "a": 0 },
+    { "q": "¿Qué océano se encuentra entre África, Asia y Australia?", "o": ["Atlántico", "Pacífico", "Índico", "Ártico"], "a": 2 },
+    { "q": "¿Quién compuso la ópera 'La flauta mágica'?", "o": ["Beethoven", "Mozart", "Vivaldi", "Handel"], "a": 1 }
+  ]
+}

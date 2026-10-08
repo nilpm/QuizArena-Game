@@ -1,17 +1,21 @@
 {
-  "name": "juego",
+  "name": "quizarena",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
+  "description": "Torneo de preguntas en tiempo real tipo eliminatoria: el anfitrión proyecta la pantalla y los jugadores participan desde el celular. Real-time quiz tournament built with Node.js and Socket.IO.",
+  "keywords": ["quiz", "trivia", "tournament", "socket.io", "express", "realtime", "game", "kahoot-like"],
+  "license": "MIT",
   "author": "nilpm",
-  "type": "commonjs",
-  "main": "index.js",
+  "private": false,
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "start": "node --max-old-space-size=384 server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node --max-old-space-size=384 src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
   },
   "dependencies": {
-    "compression": "^1.8.2",
     "express": "^5.2.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4"

@@ -17,7 +17,7 @@
 - ⚡ **Tiempo real** con [Socket.IO](https://socket.io/): puntaje, llaves y reconexiones al instante.
 - 🖥️ **Panel de anfitrión** protegido con PIN: configuración del torneo, editor de preguntas, llave del torneo y podio.
 - 🔌 **Tolerante a fallos**: si un jugador pierde la conexión tiene 20 s para volver antes de perder por W.O.
-- 🪶 **Muy liviano**: pensado para servidores con ~0.1 CPU / 512 MB (archivos precomprimidos en memoria, sin compresión por mensaje).
+- 🪶 **Muy liviano**: pensado para servidores con ~0.1 CPU (archivos precomprimidos en memoria, sin compresión por mensaje).
 - 🤖 **Bots y piloto automático** para probar el torneo completo sin necesitar decenas de celulares.
 - 🌐 **Sin dependencias de internet en el cliente**: iconos propios en SVG, sin CDN ni librerías externas.
 

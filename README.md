@@ -1,6 +1,6 @@
 # 🏆 QuizArena
 
-[![CI](https://github.com/nilpm/quizarena/actions/workflows/ci.yml/badge.svg)](https://github.com/<tu-usuario>/quizarena/actions/workflows/ci.yml)
+[![CI](https://github.com/nilpm/quizarena/actions/workflows/ci.yml/badge.svg)](https://github.com/nilpm/quizarena/actions/workflows/ci.yml)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green.svg)](LICENSE)
 ![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
 

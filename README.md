@@ -1,6 +1,6 @@
 # 🏆 QuizArena
 
-[![CI](https://github.com/<tu-usuario>/quizarena/actions/workflows/ci.yml/badge.svg)](https://github.com/<tu-usuario>/quizarena/actions/workflows/ci.yml)
+[![CI](https://github.com/nilpm/quizarena/actions/workflows/ci.yml/badge.svg)](https://github.com/<tu-usuario>/quizarena/actions/workflows/ci.yml)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green.svg)](LICENSE)
 ![Node.js](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
 
@@ -164,7 +164,7 @@ Las contribuciones son bienvenidas: revisa [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Créditos
 
-- Sonido de clic: `public/buttonClickSong_V1.mp3`. Confirma que tienes derecho a redistribuirlo antes de publicar el repositorio (si no, reemplázalo por uno propio o de licencia libre).
+- Sonido de clic: `public/buttonClickSong_V1.mp3`. [Freesound](https://freesound.org/people/EdgardEdition/sounds/113636/).
 - Construido con [Express](https://expressjs.com/), [Socket.IO](https://socket.io/) y [qrcode](https://github.com/soldair/node-qrcode).
 
 ## Licencia

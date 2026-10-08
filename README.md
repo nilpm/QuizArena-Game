@@ -26,7 +26,7 @@
 Requisitos: [Node.js](https://nodejs.org/) 18 o superior.
 
 ```bash
-git clone https://github.com/<tu-usuario>/quizarena.git
+git clone https://github.com/nilpm/quizarena.git
 cd quizarena
 npm install
 npm start

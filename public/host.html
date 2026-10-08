@@ -1,84 +1,100 @@
 <!doctype html>
-<html lang="es"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Anfitrión - Torneo</title>
-<link rel="stylesheet" href="common.css">
-</head><body class="hst">
-<header><h1><i data-ic="trophy"></i> Torneo <span id="stg"></span></h1><div class="hb"><button class="ib" id="tsn" data-snd title="Sonido de clics"></button><button class="ib" id="tsd" data-sd hidden></button><div id="gt">--:--</div></div></header>
-<div id="net" hidden><i data-ic="wifi-off"></i> Reconectando con el servidor…</div>
-<main id="mn"><div id="cw"><div id="app"></div><div id="brk"></div></div><aside class="side" id="side"></aside></main>
-<footer id="foot"></footer>
-<div id="hq"></div>
-<div id="rt"></div>
-<div id="modal"></div>
-<script src="/sio.js"></script>
-<script>window.io || document.write('<script src="/socket.io/socket.io.js"><\/script>')</script>
-<script src="common.js"></script>
-<script src="icons.js"></script>
-<script>
-const socket = io({ transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 3000 });   // websocket directo: conecta más rápido con mala señal; polling solo como respaldo
-let S = null, gEnd = 0, hqEnd = 0, introEnd = 0, url = '';
-let sideHidden = false; try { sideHidden = localStorage.sd === '1'; } catch (e) {}
-let wide = false, brkSig = '', hqK = '', hqAns = new Set(), hqRv = false, rtShown = -1;
-const P = id => S.players.find(p => p.id === id);
-const pl = (id, s) => P(id) ? av(P(id), s) : '';
-const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+<html lang="es">
 
-socket.on('connect', () => socket.emit('host:join', sessionStorage.pin || ''));
-socket.on('host:denied', () => { sessionStorage.pin = prompt('PIN del anfitrión:') || ''; socket.emit('host:join', sessionStorage.pin); });
-socket.on('disconnect', () => { $('#net').hidden = false; });
-socket.on('connect', () => { $('#net').hidden = true; });
-socket.on('host:ok', d => { url = d.url; });
-socket.on('host:msg', m => alert(m));
-socket.on('clk', n => Snd.many(n));                       // lote de clics de jugadores → sonidos superpuestos
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Anfitrión - Torneo</title>
+    <link rel="stylesheet" href="common.css">
+</head>
 
-/* ---------- sonido y panel lateral ---------- */
-function sndUi() {
-  const on = Snd.on, run = Snd.running, t = !on ? ic('volume-off') + ' Sonido apagado' : (run ? ic('volume-high') + ' Sonido' : ic('volume-mid') + ' Activar sonido');
-  document.querySelectorAll('[data-snd]').forEach(b => { b.innerHTML = t; b.style.background = on && !run ? 'var(--gold)' : ''; b.style.color = on && !run ? '#2b1c00' : ''; });
-}
-Snd.onstate(sndUi); sndUi();
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-snd]'); if (!b) return;
-  if (Snd.on && !Snd.running) { sndUi(); return; }         // el primer clic solo "desbloquea" el audio del navegador
-  Snd.on = !Snd.on; sndUi(); if (Snd.on) Snd.play({ vary: true });
-});
-function applySide() {
-  const lob = !S || S.phase === 'lobby', hide = lob || sideHidden;
-  $('#side').hidden = hide; $('#mn').classList.toggle('nosd', hide);
-  $('#tsd').hidden = lob; $('#tsd').innerHTML = ic('group') + (sideHidden ? ' Mostrar jugadores' : ' Ocultar jugadores');
-  wide = !lob && sideHidden;
-}
-document.addEventListener('click', e => {
-  if (!e.target.closest('[data-sd]')) return;
-  sideHidden = !sideHidden; try { localStorage.sd = sideHidden ? '1' : '0'; } catch (er) {}
-  brkSig = ''; render();
-});
-socket.on('state', s => {
-  S = s;
-  if (s.leftMs != null) gEnd = Date.now() + s.leftMs;
-  hqEnd = Date.now() + (s.hq ? s.hq.endsMs : 0);
-  introEnd = Date.now() + (s.stage ? s.stage.introMs : 0);
-  render();
-});
-socket.on('tick', t => { gEnd = Date.now() + t.leftMs; if (S) S.timeUp = t.timeUp; });
-setInterval(() => {
-  if (!S) return;
-  const g = $('#gt');
-  if (S.leftMs == null) g.textContent = mmss(S.cfg.totalMin * 60000);
-  else { g.textContent = mmss(gEnd - Date.now()); g.classList.toggle('up', !!S.timeUp); }
-  if ($('#hqt') && !S.hq.reveal) $('#hqt').textContent = Math.max(0, Math.ceil((hqEnd - Date.now()) / 1000));
-  else if ($('#hqt')) $('#hqt').textContent = '';
-  if ($('#ic')) $('#ic').textContent = Math.max(0, Math.ceil((introEnd - Date.now()) / 1000));
-}, 250);
-document.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (a) socket.emit('host:' + a.dataset.a); });
+<body class="hst">
+    <header>
+        <h1><i data-ic="trophy"></i> Torneo <span id="stg"></span></h1>
+        <div class="hb"><button class="ib" id="tsn" data-snd title="Sonido de clics"></button><button class="ib"
+                id="tsd" data-sd hidden></button>
+            <div id="gt">--:--</div>
+        </div>
+    </header>
+    <div id="net" hidden><i data-ic="wifi-off"></i> Reconectando con el servidor…</div>
+    <main id="mn">
+        <div id="cw">
+            <div id="app"></div>
+            <div id="brk"></div>
+        </div>
+        <aside class="side" id="side"></aside>
+    </main>
+    <footer id="foot"></footer>
+    <div id="hq"></div>
+    <div id="rt"></div>
+    <div id="modal"></div>
+    <script src="/sio.js"></script>
+    <script>window.io || document.write('<script src="/socket.io/socket.io.js"><\/script>')</script>
+    <script src="common.js"></script>
+    <script src="icons.js"></script>
+    <script>
+        const socket = io({ transports: ['websocket', 'polling'], tryAllTransports: true, reconnectionDelayMax: 3000 });   // websocket directo: conecta más rápido con mala señal; polling solo como respaldo
+        let S = null, gEnd = 0, hqEnd = 0, introEnd = 0, url = '';
+        let sideHidden = false; try { sideHidden = localStorage.sd === '1'; } catch (e) { }
+        let wide = false, brkSig = '', hqK = '', hqAns = new Set(), hqRv = false, rtShown = -1;
+        const P = id => S.players.find(p => p.id === id);
+        const pl = (id, s) => P(id) ? av(P(id), s) : '';
+        const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
 
-/* ---------- vistas ---------- */
-function lobby() {
-  if (!$('#lob')) {
-    const c = S.cfg;
-    $('#app').innerHTML = `<div class="lob" id="lob"><div><img src="/qr.png" alt="QR"><h3 style="word-break:break-all">${esc(url)}</h3>
+        socket.on('connect', () => socket.emit('host:join', sessionStorage.pin || ''));
+        socket.on('host:denied', () => { sessionStorage.pin = prompt('PIN del anfitrión:') || ''; socket.emit('host:join', sessionStorage.pin); });
+        socket.on('disconnect', () => { $('#net').hidden = false; });
+        socket.on('connect', () => { $('#net').hidden = true; });
+        socket.on('host:ok', d => { url = d.url; });
+        socket.on('host:msg', m => alert(m));
+        socket.on('clk', n => Snd.many(n));                       // lote de clics de jugadores → sonidos superpuestos
+
+        /* ---------- sonido y panel lateral ---------- */
+        function sndUi() {
+            const on = Snd.on, run = Snd.running, t = !on ? ic('volume-off') + ' Sonido apagado' : (run ? ic('volume-high') + ' Sonido' : ic('volume-mid') + ' Activar sonido');
+            document.querySelectorAll('[data-snd]').forEach(b => { b.innerHTML = t; b.style.background = on && !run ? 'var(--gold)' : ''; b.style.color = on && !run ? '#2b1c00' : ''; });
+        }
+        Snd.onstate(sndUi); sndUi();
+        document.addEventListener('click', e => {
+            const b = e.target.closest('[data-snd]'); if (!b) return;
+            if (Snd.on && !Snd.running) { sndUi(); return; }         // el primer clic solo "desbloquea" el audio del navegador
+            Snd.on = !Snd.on; sndUi(); if (Snd.on) Snd.play({ vary: true });
+        });
+        function applySide() {
+            const lob = !S || S.phase === 'lobby', hide = lob || sideHidden;
+            $('#side').hidden = hide; $('#mn').classList.toggle('nosd', hide);
+            $('#tsd').hidden = lob; $('#tsd').innerHTML = ic('group') + (sideHidden ? ' Mostrar jugadores' : ' Ocultar jugadores');
+            wide = !lob && sideHidden;
+        }
+        document.addEventListener('click', e => {
+            if (!e.target.closest('[data-sd]')) return;
+            sideHidden = !sideHidden; try { localStorage.sd = sideHidden ? '1' : '0'; } catch (er) { }
+            brkSig = ''; render();
+        });
+        socket.on('state', s => {
+            S = s;
+            if (s.leftMs != null) gEnd = Date.now() + s.leftMs;
+            hqEnd = Date.now() + (s.hq ? s.hq.endsMs : 0);
+            introEnd = Date.now() + (s.stage ? s.stage.introMs : 0);
+            render();
+        });
+        socket.on('tick', t => { gEnd = Date.now() + t.leftMs; if (S) S.timeUp = t.timeUp; });
+        setInterval(() => {
+            if (!S) return;
+            const g = $('#gt');
+            if (S.leftMs == null) g.textContent = mmss(S.cfg.totalMin * 60000);
+            else { g.textContent = mmss(gEnd - Date.now()); g.classList.toggle('up', !!S.timeUp); }
+            if ($('#hqt') && !S.hq.reveal) $('#hqt').textContent = Math.max(0, Math.ceil((hqEnd - Date.now()) / 1000));
+            else if ($('#hqt')) $('#hqt').textContent = '';
+            if ($('#ic')) $('#ic').textContent = Math.max(0, Math.ceil((introEnd - Date.now()) / 1000));
+        }, 250);
+        document.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (a) socket.emit('host:' + a.dataset.a); });
+
+        /* ---------- vistas ---------- */
+        function lobby() {
+            if (!$('#lob')) {
+                const c = S.cfg;
+                $('#app').innerHTML = `<div class="lob" id="lob"><div><img src="/qr.png" alt="QR"><h3 style="word-break:break-all">${esc(url)}</h3>
       <div class="panel">
         <label>Tiempo global (min)<input id="c_tm" type="number" value="${c.totalMin}"></label>
         <label>Duración por combate (seg)<input id="c_bs" type="number" value="${c.battleSec}"></label>
@@ -95,285 +111,296 @@ function lobby() {
         <small id="b_cnt"></small></div>
       <button class="btn" data-q="1" style="background:#fff">${ic('edit-doc')} Preguntas</button></div>
       <div><h2>Jugadores: <span id="pn"></span></h2><div class="plist" id="pl"></div></div></div>`;
-    $('#lob').onchange = e => { if (e.target.closest('.bots')) return; socket.emit('host:cfg', { totalMin: $('#c_tm').value, battleSec: $('#c_bs').value, qCount: $('#c_qc').value, topQSec: $('#c_tq').value, prizes: [0, 1, 2].map(i => $('#c_p' + i).value) }); };
-    $('#b_add').onclick = () => {
-      const n = Math.max(1, Math.min(500, parseInt($('#b_n').value) || 1)); $('#b_n').value = n;
-      socket.emit('host:bots', { n, flaky: $('#b_f').checked });
-    };
-    $('#b_clr').onclick = () => socket.emit('host:bots:clear');
-    $('#lob').querySelector('[data-q]').onclick = openQ;
-  }
-  $('#pn').textContent = S.players.length;
-  $('#b_cnt').textContent = S.bots ? `Bots en el lobby: ${S.bots}` : 'Aún no hay bots';
-  $('#b_clr').disabled = !S.bots;
-  $('#pl').innerHTML = S.players.map(p => `<div class="${p.online ? '' : 'chip off'}">${av(p, 52)}<span>${esc(p.name)}</span></div>`).join('');
-}
-const tieTag = t => t ? `<div class="tie">${ic('scale')} Empate en puntos: ${t === 'speed' ? 'ganó quien sumó primero' : 'definido al azar ' + ic('dice')}</div>` : '';
-function matchCard(m) {
-  const a = P(m.a), b = P(m.b);
-  const z = wide ? 56 : 42;
-  return `<div class="mc ${m.state}"><div class="s ${m.winner === m.a ? 'w' : ''}">${av(a, z)}<span class="nm">${esc(a.name)}${a.online ? '' : ' ' + ic('cloud-off')}</span><b>${m.sa}</b></div>
+                $('#lob').onchange = e => { if (e.target.closest('.bots')) return; socket.emit('host:cfg', { totalMin: $('#c_tm').value, battleSec: $('#c_bs').value, qCount: $('#c_qc').value, topQSec: $('#c_tq').value, prizes: [0, 1, 2].map(i => $('#c_p' + i).value) }); };
+                $('#b_add').onclick = () => {
+                    const n = Math.max(1, Math.min(500, parseInt($('#b_n').value) || 1)); $('#b_n').value = n;
+                    socket.emit('host:bots', { n, flaky: $('#b_f').checked });
+                };
+                $('#b_clr').onclick = () => socket.emit('host:bots:clear');
+                $('#lob').querySelector('[data-q]').onclick = openQ;
+            }
+            $('#pn').textContent = S.players.length;
+            $('#b_cnt').textContent = S.bots ? `Bots en el lobby: ${S.bots}` : 'Aún no hay bots';
+            $('#b_clr').disabled = !S.bots;
+            $('#pl').innerHTML = S.players.map(p => `<div class="${p.online ? '' : 'chip off'}">${av(p, 52)}<span>${esc(p.name)}</span></div>`).join('');
+        }
+        const tieTag = t => t ? `<div class="tie">${ic('scale')} Empate en puntos: ${t === 'speed' ? 'ganó quien sumó primero' : 'definido al azar ' + ic('dice')}</div>` : '';
+        function matchCard(m) {
+            const a = P(m.a), b = P(m.b);
+            const z = wide ? 56 : 42;
+            return `<div class="mc ${m.state}"><div class="s ${m.winner === m.a ? 'w' : ''}">${av(a, z)}<span class="nm">${esc(a.name)}${a.online ? '' : ' ' + ic('cloud-off')}</span><b>${m.sa}</b></div>
     <div class="s ${m.winner === m.b ? 'w' : ''}">${av(b, z)}<span class="nm">${esc(b.name)}${b.online ? '' : ' ' + ic('cloud-off')}</span><b>${m.sb}</b></div>${tieTag(m.tie)}</div>`;
-}
-/* ---------- PREGUNTAS FINALES: pantalla completa, se construye 1 vez por pregunta y luego solo se "parchea" ---------- */
-const liveM = () => S.stage.matches.find(x => x.state === 'live');
-function hqRender() {
-  const q = S.hq, m = liveM(); if (!m) return;
-  const key = S.stage.name + '|' + m.id + '|' + q.n;
-  if (hqK !== key) {                                        // pregunta nueva → construir
-    hqK = key; hqAns = new Set(); hqRv = false;
-    const z = Math.round(Math.max(40, Math.min(72, innerHeight * .085)));
-    const dp = id => `<div class="dp" data-id="${id}">${pl(id, z)}<span class="nm">${esc(P(id).name)}</span><b class="sc">${id === m.a ? m.sa : m.sb}</b><span class="st">…</span></div>`;
-    $('#hq').innerHTML = `<div class="hqf"><div class="hqh"><span class="t">${tx(S.stage.name)} · Pregunta ${q.n}/${q.total}</span>
+        }
+        /* ---------- PREGUNTAS FINALES: pantalla completa, se construye 1 vez por pregunta y luego solo se "parchea" ---------- */
+        const liveM = () => S.stage.matches.find(x => x.state === 'live');
+        function hqRender() {
+            const q = S.hq, m = liveM(); if (!m) return;
+            const key = S.stage.name + '|' + m.id + '|' + q.n;
+            if (hqK !== key) {                                        // pregunta nueva → construir
+                hqK = key; hqAns = new Set(); hqRv = false;
+                const z = Math.round(Math.max(40, Math.min(72, innerHeight * .085)));
+                const dp = id => `<div class="dp" data-id="${id}">${pl(id, z)}<span class="nm">${esc(P(id).name)}</span><b class="sc">${id === m.a ? m.sa : m.sb}</b><span class="st">…</span></div>`;
+                $('#hq').innerHTML = `<div class="hqf"><div class="hqh"><span class="t">${tx(S.stage.name)} · Pregunta ${q.n}/${q.total}</span>
       <button class="ib" data-snd></button><button class="ib" data-fs title="Pantalla completa del navegador">${ic('fullscreen')}</button><b id="hqt"></b></div>
       <div class="tbar"><i id="hb"></i></div><h1 class="hqq">${tx(q.text)}</h1>
       <div class="hopts n${q.opts.length}">${q.opts.map((o, i) => `<div class="ho" data-i="${i}" style="background:${OPT[i].c}"><span class="sy">${OPT[i].s}</span><span>${tx(o)}</span></div>`).join('')}</div>
       <div class="duel">${dp(m.a)}${dp(m.b)}</div></div>`;
-    sndUi();
-    if (!q.reveal) barAnim($('#hb'), q.endsMs, S.cfg.topQSec * 1000);
-  }
-  const root = $('#hq');
-  [m.a, m.b].forEach(id => root.querySelector(`.dp[data-id="${id}"] .sc`).textContent = id === m.a ? m.sa : m.sb);
-  q.answered.forEach(id => {                                // ✔ alguien votó → animación
-    if (hqAns.has(id)) return; hqAns.add(id);
-    const d = root.querySelector(`.dp[data-id="${id}"]`); if (!d) return;
-    d.classList.add('voted', 'vfx'); d.querySelector('.st').innerHTML = ic('check') + ' Votó';
-    setTimeout(() => d.classList.remove('vfx'), 900);
-  });
-  if (q.reveal && !hqRv) {                                  // ✅ / ❌ resultado
-    hqRv = true; const rv = q.reveal;
-    const bar = $('#hb'); if (bar) { const t = getComputedStyle(bar).transform, k = t && t !== 'none' ? +t.slice(7).split(',')[0] : 0; bar.style.transition = 'none'; bar.style.transform = `scaleX(${k})`; }
-    root.querySelectorAll('.ho').forEach(o => o.classList.add(+o.dataset.i === rv.correct ? 'ok' : 'dim'));
-    let anyOk = false;
-    [m.a, m.b].forEach(id => {
-      const r = rv.res[id], d = root.querySelector(`.dp[data-id="${id}"]`); if (!d) return;
-      d.classList.remove('voted', 'vfx'); d.classList.add(r.ok ? 'good' : 'bad');
-      d.querySelector('.st').innerHTML = r.ok ? ic('check-circle') + ' +' + r.pts : (r.chosen == null ? ic('timer') + ' Sin respuesta' : ic('close-circle') + ' Falló');
-      const f = document.createElement('i'); f.className = 'fl'; f.innerHTML = r.ok ? '+' + r.pts : ic('close'); f.style.color = r.ok ? '#7CFF6B' : '#ff3d5a'; d.appendChild(f);
-      setTimeout(() => f.remove(), 1600);
-      const o = r.chosen != null && root.querySelector(`.ho[data-i="${r.chosen}"]`);   // quién eligió qué
-      if (o) { let v = o.querySelector('.vt'); if (!v) { v = document.createElement('div'); v.className = 'vt'; o.appendChild(v); } v.insertAdjacentHTML('beforeend', pl(id, 40)); }
-      if (r.ok) anyOk = true;
-    });
-    if (anyOk) confetti(24);
-  }
-}
-function hqClose() { if (hqK || $('#hq').firstChild) { $('#hq').innerHTML = ''; hqK = ''; } }
-document.addEventListener('click', e => { if (e.target.closest('[data-fs]')) { const d = document; d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen && d.documentElement.requestFullscreen().catch(() => {}); } });
+                sndUi();
+                if (!q.reveal) barAnim($('#hb'), q.endsMs, S.cfg.topQSec * 1000);
+            }
+            const root = $('#hq');
+            [m.a, m.b].forEach(id => root.querySelector(`.dp[data-id="${id}"] .sc`).textContent = id === m.a ? m.sa : m.sb);
+            q.answered.forEach(id => {                                // ✔ alguien votó → animación
+                if (hqAns.has(id)) return; hqAns.add(id);
+                const d = root.querySelector(`.dp[data-id="${id}"]`); if (!d) return;
+                d.classList.add('voted', 'vfx'); d.querySelector('.st').innerHTML = ic('check') + ' Votó';
+                setTimeout(() => d.classList.remove('vfx'), 900);
+            });
+            if (q.reveal && !hqRv) {                                  // ✅ / ❌ resultado
+                hqRv = true; const rv = q.reveal;
+                const bar = $('#hb'); if (bar) { const t = getComputedStyle(bar).transform, k = t && t !== 'none' ? +t.slice(7).split(',')[0] : 0; bar.style.transition = 'none'; bar.style.transform = `scaleX(${k})`; }
+                root.querySelectorAll('.ho').forEach(o => o.classList.add(+o.dataset.i === rv.correct ? 'ok' : 'dim'));
+                let anyOk = false;
+                [m.a, m.b].forEach(id => {
+                    const r = rv.res[id], d = root.querySelector(`.dp[data-id="${id}"]`); if (!d) return;
+                    d.classList.remove('voted', 'vfx'); d.classList.add(r.ok ? 'good' : 'bad');
+                    d.querySelector('.st').innerHTML = r.ok ? ic('check-circle') + ' +' + r.pts : (r.chosen == null ? ic('timer') + ' Sin respuesta' : ic('close-circle') + ' Falló');
+                    const f = document.createElement('i'); f.className = 'fl'; f.innerHTML = r.ok ? '+' + r.pts : ic('close'); f.style.color = r.ok ? '#7CFF6B' : '#ff3d5a'; d.appendChild(f);
+                    setTimeout(() => f.remove(), 1600);
+                    const o = r.chosen != null && root.querySelector(`.ho[data-i="${r.chosen}"]`);   // quién eligió qué
+                    if (o) { let v = o.querySelector('.vt'); if (!v) { v = document.createElement('div'); v.className = 'vt'; o.appendChild(v); } v.insertAdjacentHTML('beforeend', pl(id, 40)); }
+                    if (r.ok) anyOk = true;
+                });
+                if (anyOk) confetti(24);
+            }
+        }
+        function hqClose() { if (hqK || $('#hq').firstChild) { $('#hq').innerHTML = ''; hqK = ''; } }
+        document.addEventListener('click', e => { if (e.target.closest('[data-fs]')) { const d = document; d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen && d.documentElement.requestFullscreen().catch(() => { }); } });
 
-/* ---------- LLAVE: columnas ordenadas + líneas que unen a cada jugador con su siguiente partido ---------- */
-function bracketCols() {
-  const pos = {};                                           // id → altura relativa (0..1) en su última columna
-  return S.history.map(r => {
-    const avg = m => { const v = [pos[m.a], pos[m.b]].filter(x => x != null); return v.length ? v.reduce((a, b) => a + b) / v.length : 9; };
-    const ms = r.matches.map((m, i) => ({ m, i, k: avg(m) })).sort((x, y) => (x.k - y.k) || (x.i - y.i)).map(x => x.m);   // reduce cruces
-    const rows = ms.length * 2 + (r.bye ? 1 : 0);
-    ms.forEach((m, i) => { pos[m.a] = (i * 2 + .5) / rows; pos[m.b] = (i * 2 + 1.5) / rows; });
-    if (r.bye) pos[r.bye] = (rows - .5) / rows;
-    return { name: r.name, ms, bye: r.bye };
-  });
-}
-function brkRender() {
-  const box = $('#brk');
-  if (!S.history.length) { box.innerHTML = ''; brkSig = ''; return; }
-  const sig = S.history.length + ':' + S.players.length + ':' + wide;
-  if (sig === brkSig) return;                               // nada cambió → no se toca (conserva el deslizante)
-  const old = box.querySelector('.br'), grew = !brkSig || sig.split(':')[0] !== brkSig.split(':')[0], sl = old ? old.scrollLeft : 0, st = old ? old.scrollTop : 0;
-  brkSig = sig;
-  const row = (id, sc, win, o, c) => `<div class="bmr ${win ? 'w' : ''}" data-pid="${id}" data-c="${c}" data-o="${o}">${pl(id, 26)}<span class="nm">${esc(P(id).name)}</span><b>${sc}</b></div>`;
-  const cols = bracketCols().map((r, c) => `<div class="bcol"><h4>${tx(r.name)}</h4><div class="bml">
+        /* ---------- LLAVE: columnas ordenadas + líneas que unen a cada jugador con su siguiente partido ---------- */
+        function bracketCols() {
+            const pos = {};                                           // id → altura relativa (0..1) en su última columna
+            return S.history.map(r => {
+                const avg = m => { const v = [pos[m.a], pos[m.b]].filter(x => x != null); return v.length ? v.reduce((a, b) => a + b) / v.length : 9; };
+                const ms = r.matches.map((m, i) => ({ m, i, k: avg(m) })).sort((x, y) => (x.k - y.k) || (x.i - y.i)).map(x => x.m);   // reduce cruces
+                const rows = ms.length * 2 + (r.bye ? 1 : 0);
+                ms.forEach((m, i) => { pos[m.a] = (i * 2 + .5) / rows; pos[m.b] = (i * 2 + 1.5) / rows; });
+                if (r.bye) pos[r.bye] = (rows - .5) / rows;
+                return { name: r.name, ms, bye: r.bye };
+            });
+        }
+        function brkRender() {
+            const box = $('#brk');
+            if (!S.history.length) { box.innerHTML = ''; brkSig = ''; return; }
+            const sig = S.history.length + ':' + S.players.length + ':' + wide;
+            if (sig === brkSig) return;                               // nada cambió → no se toca (conserva el deslizante)
+            const old = box.querySelector('.br'), grew = !brkSig || sig.split(':')[0] !== brkSig.split(':')[0], sl = old ? old.scrollLeft : 0, st = old ? old.scrollTop : 0;
+            brkSig = sig;
+            const row = (id, sc, win, o, c) => `<div class="bmr ${win ? 'w' : ''}" data-pid="${id}" data-c="${c}" data-o="${o}">${pl(id, 26)}<span class="nm">${esc(P(id).name)}</span><b>${sc}</b></div>`;
+            const cols = bracketCols().map((r, c) => `<div class="bcol"><h4>${tx(r.name)}</h4><div class="bml">
     ${r.ms.map(m => `<div class="bm">${row(m.a, m.sa, m.w === m.a, m.w === m.a ? 'w' : 'l', c)}${row(m.b, m.sb, m.w === m.b, m.w === m.b ? 'w' : 'l', c)}</div>`).join('')}
     ${r.bye ? `<div class="bm"><div class="bmr" data-pid="${r.bye}" data-c="${c}" data-o="b">${pl(r.bye, 26)}<span class="nm">${esc(P(r.bye).name)}</span></div><div class="bye">${ic('sleep')} descansa · avanza</div></div>` : ''}</div></div>`).join('');
-  box.innerHTML = `<div class="bh"><h3>Llave del torneo</h3><span class="lg"><span><i></i>ganó / avanza</span><span><i class="l"></i>sigue jugando</span></span>
+            box.innerHTML = `<div class="bh"><h3>Llave del torneo</h3><span class="lg"><span><i></i>ganó / avanza</span><span><i class="l"></i>sigue jugando</span></span>
     <button class="ib" data-br="-1">${ic('chev-l')}</button><button class="ib" data-br="1">${ic('chev-r')}</button><button class="ib" data-br="9">Última ronda ${ic('skip')}</button></div>
     <div class="br" id="br"><div class="brin" id="brin"><svg id="bsv"></svg>${cols}</div></div>`;
-  requestAnimationFrame(() => {
-    const br = $('#br'); if (!br) return;
-    drawLinks();
-    if (grew) brkLast(!!old); else { br.scrollLeft = sl; br.scrollTop = st; }
-  });
-}
-function brkLast(smooth) {                                 // lleva el deslizante a la última ronda, centrada
-  const br = $('#br'), c = br && [...br.querySelectorAll('.bcol')].pop(), bm = c && c.querySelector('.bm'); if (!bm) return;
-  const r = bm.getBoundingClientRect(), b = br.getBoundingClientRect();
-  br.scrollTo({ left: br.scrollWidth, top: Math.max(0, br.scrollTop + r.top + r.height / 2 - b.top - b.height / 2), behavior: smooth ? 'smooth' : 'auto' });
-}
-function drawLinks() {
-  const inn = $('#brin'), svg = $('#bsv'); if (!inn) return;
-  const base = inn.getBoundingClientRect(), occ = {}, rows = [...inn.querySelectorAll('[data-pid]')];
-  rows.forEach(el => (occ[el.dataset.pid] = occ[el.dataset.pid] || []).push(el));
-  let d = { w: '', l: '', b: '' };
-  rows.forEach(el => {
-    const nx = occ[el.dataset.pid].find(o => +o.dataset.c > +el.dataset.c); if (!nx) return;
-    const a = el.closest('.bm').getBoundingClientRect(), ar = el.getBoundingClientRect(), b = nx.closest('.bm').getBoundingClientRect(), br = nx.getBoundingClientRect();
-    const x1 = a.right - base.left, y1 = ar.top + ar.height / 2 - base.top, x2 = b.left - base.left, y2 = br.top + br.height / 2 - base.top, k = Math.min(60, (x2 - x1) / 2);
-    d[el.dataset.o] += `M${x1} ${y1}C${x1 + k} ${y1} ${x2 - k} ${y2} ${x2} ${y2}`;
-  });
-  svg.setAttribute('width', inn.scrollWidth); svg.setAttribute('height', inn.scrollHeight);
-  svg.innerHTML = ['l', 'b', 'w'].map(k => d[k] ? `<path class="${k}" d="${d[k]}"/>` : '').join('');   // 3 paths en total: liviano
-}
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-br]'); const br = $('#br'); if (!b || !br) return;
-  const v = +b.dataset.br; if (v === 9) brkLast(true); else br.scrollBy({ left: v * 420, behavior: 'smooth' });
-});
-let rsz = 0; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(drawLinks, 200); });
+            requestAnimationFrame(() => {
+                const br = $('#br'); if (!br) return;
+                drawLinks();
+                if (grew) brkLast(!!old); else { br.scrollLeft = sl; br.scrollTop = st; }
+            });
+        }
+        function brkLast(smooth) {                                 // lleva el deslizante a la última ronda, centrada
+            const br = $('#br'), c = br && [...br.querySelectorAll('.bcol')].pop(), bm = c && c.querySelector('.bm'); if (!bm) return;
+            const r = bm.getBoundingClientRect(), b = br.getBoundingClientRect();
+            br.scrollTo({ left: br.scrollWidth, top: Math.max(0, br.scrollTop + r.top + r.height / 2 - b.top - b.height / 2), behavior: smooth ? 'smooth' : 'auto' });
+        }
+        function drawLinks() {
+            const inn = $('#brin'), svg = $('#bsv'); if (!inn) return;
+            const base = inn.getBoundingClientRect(), occ = {}, rows = [...inn.querySelectorAll('[data-pid]')];
+            rows.forEach(el => (occ[el.dataset.pid] = occ[el.dataset.pid] || []).push(el));
+            let d = { w: '', l: '', b: '' };
+            rows.forEach(el => {
+                const nx = occ[el.dataset.pid].find(o => +o.dataset.c > +el.dataset.c); if (!nx) return;
+                const a = el.closest('.bm').getBoundingClientRect(), ar = el.getBoundingClientRect(), b = nx.closest('.bm').getBoundingClientRect(), br = nx.getBoundingClientRect();
+                const x1 = a.right - base.left, y1 = ar.top + ar.height / 2 - base.top, x2 = b.left - base.left, y2 = br.top + br.height / 2 - base.top, k = Math.min(60, (x2 - x1) / 2);
+                d[el.dataset.o] += `M${x1} ${y1}C${x1 + k} ${y1} ${x2 - k} ${y2} ${x2} ${y2}`;
+            });
+            svg.setAttribute('width', inn.scrollWidth); svg.setAttribute('height', inn.scrollHeight);
+            svg.innerHTML = ['l', 'b', 'w'].map(k => d[k] ? `<path class="${k}" d="${d[k]}"/>` : '').join('');   // 3 paths en total: liviano
+        }
+        document.addEventListener('click', e => {
+            const b = e.target.closest('[data-br]'); const br = $('#br'); if (!b || !br) return;
+            const v = +b.dataset.br; if (v === 9) brkLast(true); else br.scrollBy({ left: v * 420, behavior: 'smooth' });
+        });
+        let rsz = 0; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(drawLinks, 200); });
 
-/* ---------- MODAL: mayor puntaje de la ronda ---------- */
-function countUp(el, to, delay) {
-  if (matchMedia('(prefers-reduced-motion:reduce)').matches) { el.textContent = to; return; }
-  setTimeout(() => { const t0 = performance.now(), f = t => { const k = Math.min(1, (t - t0) / 1100); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1 && el.isConnected) requestAnimationFrame(f); }; requestAnimationFrame(f); }, delay);
-}
-function rtOpen() {
-  const top = S.roundTop || []; if (!top.length) return;
-  const max = Math.max(1, ...top.map(p => p.score));
-  const def = [null, { bg: 'linear-gradient(#ffe066,#ffb300)', md: medalIc(1), d: 1.0, sz: 92 }, { bg: 'linear-gradient(#eef1f5,#a9b3c1)', md: medalIc(2), d: .5, sz: 76 }, { bg: 'linear-gradient(#f0b27a,#b0703a)', md: medalIc(3), d: 0, sz: 76 }];
-  const col = r => { const p = top[r - 1]; if (!p) return ''; const f = def[r];
-    return `<div class="rp" style="--d:${f.d}s"><div class="who">${av(p, f.sz)}<span>${esc(p.name)}</span></div>
-      <div class="bar" style="--bg:${f.bg};--r:${(.3 + .7 * p.score / max).toFixed(2)}"><span class="md">${f.md}</span><span class="sc" data-to="${p.score}">0</span></div></div>`; };
-  $('#rt').innerHTML = `<div class="rtm" id="rtm"><div class="rtc"><h2>${ic('fire')} Mayor puntaje de la ronda<small>${tx(S.stage ? S.stage.name : '')}</small></h2>
+        /* ---------- MODAL: mayor puntaje de la ronda ---------- */
+        function countUp(el, to, delay) {
+            if (matchMedia('(prefers-reduced-motion:reduce)').matches) { el.textContent = to; return; }
+            setTimeout(() => { const t0 = performance.now(), f = t => { const k = Math.min(1, (t - t0) / 1100); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1 && el.isConnected) requestAnimationFrame(f); }; requestAnimationFrame(f); }, delay);
+        }
+        function rtOpen() {
+            const top = S.roundTop || []; if (!top.length) return;
+            const max = Math.max(1, ...top.map(p => p.score));
+            const def = [null, { bg: 'linear-gradient(#ffe066,#ffb300)', md: medalIc(1), d: 1.0, sz: 92 }, { bg: 'linear-gradient(#eef1f5,#a9b3c1)', md: medalIc(2), d: .5, sz: 76 }, { bg: 'linear-gradient(#f0b27a,#b0703a)', md: medalIc(3), d: 0, sz: 76 }];
+            const col = r => {
+                const p = top[r - 1]; if (!p) return ''; const f = def[r];
+                return `<div class="rp" style="--d:${f.d}s"><div class="who">${av(p, f.sz)}<span>${esc(p.name)}</span></div>
+      <div class="bar" style="--bg:${f.bg};--r:${(.3 + .7 * p.score / max).toFixed(2)}"><span class="md">${f.md}</span><span class="sc" data-to="${p.score}">0</span></div></div>`;
+            };
+            $('#rt').innerHTML = `<div class="rtm" id="rtm"><div class="rtc"><h2>${ic('fire')} Mayor puntaje de la ronda<small>${tx(S.stage ? S.stage.name : '')}</small></h2>
     <div class="rpod">${col(2)}${col(1)}${col(3)}</div>
     <div class="rest">${top.slice(3).map((p, i) => `<div class="row" style="--i:${i}">${i + 4}. ${av(p, 30)} ${esc(p.name)}<b>${p.score}</b></div>`).join('')}</div>
     <div class="rbtns"><button class="btn w" data-x="rt">Cerrar</button>${S.phase === 'stageEnd' ? `<button class="btn" data-a="next" data-x="rt">${S.timeUp ? ic('timer') + ' Terminar torneo por puntos' : 'Continuar ' + ic('arrow-right')}</button>` : ''}</div></div></div>`;
-  $('#rt').querySelectorAll('.sc').forEach(el => countUp(el, +el.dataset.to, +el.closest('.rp').style.getPropertyValue('--d').replace('s', '') * 1000 + 300));
-  setTimeout(() => { if ($('#rtm')) confetti(30); }, 1300);
-}
-function rtSync() {
-  if (S.phase !== 'stageEnd') { if ($('#rt').firstChild) $('#rt').innerHTML = ''; return; }
-  const key = S.history.length; if (rtShown === key) return; rtShown = key;
-  setTimeout(() => { if (S && S.phase === 'stageEnd' && rtShown === key) rtOpen(); }, 700);   // deja ver el marcador final un instante
-}
-document.addEventListener('click', e => { if (e.target.closest('[data-x="rt"]')) $('#rt').innerHTML = ''; if (e.target.closest('[data-rt]')) rtOpen(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#rt').innerHTML = ''; });
+            $('#rt').querySelectorAll('.sc').forEach(el => countUp(el, +el.dataset.to, +el.closest('.rp').style.getPropertyValue('--d').replace('s', '') * 1000 + 300));
+            setTimeout(() => { if ($('#rtm')) confetti(30); }, 1300);
+        }
+        function rtSync() {
+            if (S.phase !== 'stageEnd') { if ($('#rt').firstChild) $('#rt').innerHTML = ''; return; }
+            const key = S.history.length; if (rtShown === key) return; rtShown = key;
+            setTimeout(() => { if (S && S.phase === 'stageEnd' && rtShown === key) rtOpen(); }, 700);   // deja ver el marcador final un instante
+        }
+        document.addEventListener('click', e => { if (e.target.closest('[data-x="rt"]')) $('#rt').innerHTML = ''; if (e.target.closest('[data-rt]')) rtOpen(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#rt').innerHTML = ''; });
 
-function groups() {
-  const g = (t, f) => { const l = S.players.filter(f); return `<div class="grp"><h4>${t} (${l.length})</h4><div class="chips">${l.map(p => `<span class="chip ${p.online ? '' : 'off'}" title="${esc(p.name)}">${av(p, 34)}</span>`).join('')}</div></div>`; };
-  return '<div class="sh"><span>' + ic('group') + ' Jugadores</span><button class="ib" data-sd>Ocultar ' + ic('close') + '</button></div>' + g(ic('trophy') + ' En el torneo', p => p.status === 'bracket' || p.status === 'semi') + g(ic('refresh') + ' Repechaje', p => p.status === 'rep') + g(ic('skull') + ' Eliminados', p => p.status === 'out');
-}
-const CROWN = '<svg class="crown" viewBox="0 0 64 46" aria-hidden="true"><g stroke="#08141f" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><path d="M7 38 L3 12 L19 24 L32 5 L45 24 L61 12 L57 38 Z" fill="#ffd23f"/><rect x="7" y="37" width="50" height="7" rx="2" fill="#ffb300"/><circle cx="3" cy="11" r="3.5" fill="#f0523f"/><circle cx="32" cy="5" r="3.5" fill="#2d9cdb"/><circle cx="61" cy="11" r="3.5" fill="#f0523f"/></g></svg>';
-const SPARKS = [['-6%', '8%', 22, 0], ['96%', '4%', 16, .5], ['-14%', '52%', 14, 1.1], ['104%', '46%', 24, .3], ['6%', '96%', 16, .8], ['88%', '92%', 20, 1.4]];
-function podium() {
-  // d = segundo en que sube el bloque: 3º primero, luego 2º, y al final el campeón (con suspenso en medio)
-  const D = { 3: .4, 2: 2.0, 1: 4.0 };
-  const pod = (r, c) => {
-    const p = S.players.find(x => x.rank === r); if (!p) return '';
-    const win = r === 1;
-    const sp = win ? SPARKS.map(k => `<i class="sp" style="--x:${k[0]};--y:${k[1]};--s:${k[2]}px;--o:${k[3]}s"></i>`).join('') : '';
-    return `<div class="pod ${c}" style="--d:${D[r]}s"><div class="who">${win ? CROWN : ''}<div class="avw">${av(p, win ? 130 : 96)}${sp}</div><h2>${esc(p.name)}</h2></div><div class="blk">${medalIc(r)}<small>${esc(S.cfg.prizes[r - 1] || '')}</small></div></div>`;
-  };
-  const rest = S.players.filter(p => p.rank > 3).sort((a, b) => a.rank - b.rank);
-  const hasWin = S.players.some(x => x.rank === 1);
-  return `<div class="fin"><div class="fin-bg"><div class="fin-rays"></div></div><div class="fin-flash"></div>
+        function groups() {
+            const g = (t, f) => { const l = S.players.filter(f); return `<div class="grp"><h4>${t} (${l.length})</h4><div class="chips">${l.map(p => `<span class="chip ${p.online ? '' : 'off'}" title="${esc(p.name)}">${av(p, 34)}</span>`).join('')}</div></div>`; };
+            return '<div class="sh"><span>' + ic('group') + ' Jugadores</span><button class="ib" data-sd>Ocultar ' + ic('close') + '</button></div>' + g(ic('trophy') + ' En el torneo', p => p.status === 'bracket' || p.status === 'semi') + g(ic('refresh') + ' Repechaje', p => p.status === 'rep') + g(ic('skull') + ' Eliminados', p => p.status === 'out');
+        }
+        const CROWN = '<svg class="crown" viewBox="0 0 64 46" aria-hidden="true"><g stroke="#08141f" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><path d="M7 38 L3 12 L19 24 L32 5 L45 24 L61 12 L57 38 Z" fill="#ffd23f"/><rect x="7" y="37" width="50" height="7" rx="2" fill="#ffb300"/><circle cx="3" cy="11" r="3.5" fill="#f0523f"/><circle cx="32" cy="5" r="3.5" fill="#2d9cdb"/><circle cx="61" cy="11" r="3.5" fill="#f0523f"/></g></svg>';
+        const SPARKS = [['-6%', '8%', 22, 0], ['96%', '4%', 16, .5], ['-14%', '52%', 14, 1.1], ['104%', '46%', 24, .3], ['6%', '96%', 16, .8], ['88%', '92%', 20, 1.4]];
+        function podium() {
+            // d = segundo en que sube el bloque: 3º primero, luego 2º, y al final el campeón (con suspenso en medio)
+            const D = { 3: .4, 2: 2.0, 1: 4.0 };
+            const pod = (r, c) => {
+                const p = S.players.find(x => x.rank === r); if (!p) return '';
+                const win = r === 1;
+                const sp = win ? SPARKS.map(k => `<i class="sp" style="--x:${k[0]};--y:${k[1]};--s:${k[2]}px;--o:${k[3]}s"></i>`).join('') : '';
+                return `<div class="pod ${c}" style="--d:${D[r]}s"><div class="who">${win ? CROWN : ''}<div class="avw">${av(p, win ? 130 : 96)}${sp}</div><h2>${esc(p.name)}</h2></div><div class="blk">${medalIc(r)}<small>${esc(S.cfg.prizes[r - 1] || '')}</small></div></div>`;
+            };
+            const rest = S.players.filter(p => p.rank > 3).sort((a, b) => a.rank - b.rank);
+            const hasWin = S.players.some(x => x.rank === 1);
+            return `<div class="fin"><div class="fin-bg"><div class="fin-rays"></div></div><div class="fin-flash"></div>
     <h1 class="fin-title">${ic('party')} ¡Podio final!</h1>
     <div class="podium">${hasWin ? '<div class="fin-sus">¿Y el campeón es…?</div>' : ''}${pod(2, 'p2')}${pod(1, 'p1')}${pod(3, 'p3')}</div>
     <div class="panel fin-rest"><h3>Resto de participantes</h3><div class="chips">${rest.map(p => `<span title="Top ${p.rank}" style="text-align:center;font-size:.75rem">${av(p, 40)}<br>Top ${p.rank}</span>`).join('')}</div></div></div>`;
-}
+        }
 
-/* ---------- FINAL: coreografía del podio (fuegos artificiales + confeti sincronizados con el CSS .fin) ---------- */
-const FIN = { t: [], raf: 0, cv: null, rs: null };
-function finClear() {
-  FIN.t.forEach(clearTimeout); FIN.t = [];
-  if (FIN.raf) cancelAnimationFrame(FIN.raf); FIN.raf = 0;
-  if (FIN.rs) removeEventListener('resize', FIN.rs); FIN.rs = null;
-  if (FIN.cv) FIN.cv.remove(); FIN.cv = null;
-}
-function finReset() { finClear(); window._finK = ''; }
-function finFireworks() {
-  const cv = document.createElement('canvas'); cv.id = 'fw'; document.body.appendChild(cv); FIN.cv = cv;
-  const g = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2); let W = 0, H = 0;
-  FIN.rs = () => { W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); };
-  FIN.rs(); addEventListener('resize', FIN.rs);
-  const cols = ['#ffc93c', '#ff5c4d', '#3fb6ff', '#3bd671', '#ff8a3d', '#ffffff', '#c084fc', '#ff7ac6'];
-  const rk = [], pt = [], t0 = performance.now(); let last = t0, nextL = t0, on = true;
-  const R = (a, b) => a + Math.random() * (b - a);
-  const launch = () => { const ty = H * R(.12, .5); rk.push({ x: W * R(.1, .9), y: H + 10, vx: R(-40, 40), vy: -Math.sqrt(2 * 620 * (H - ty)), c: cols[(Math.random() * cols.length) | 0] }); };
-  const boom = r => {
-    const n = 60 + ((Math.random() * 30) | 0), ring = Math.random() < .3, c2 = Math.random() < .5 ? cols[(Math.random() * cols.length) | 0] : r.c;
-    for (let i = 0; i < n && pt.length < 800; i++) { const a = Math.PI * 2 * i / n + R(-.05, .05), v = ring ? 230 : R(60, 330);
-      pt.push({ x: r.x, y: r.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: R(1.1, 1.9), age: 0, c: i % 3 ? r.c : c2, z: R(1.6, 3.2) }); }
-  };
-  const loop = now => {
-    FIN.raf = requestAnimationFrame(loop);
-    const dt = Math.min(.05, (now - last) / 1000); last = now;
-    const secs = (now - t0) / 1000;
-    if (now >= nextL) { launch(); nextL = now + (secs < 9 ? R(260, 620) : R(1800, 2800)); if (secs < 9 && Math.random() < .35) launch(); }   // 9 s de gran final, luego uno cada par de segundos
-    if (!rk.length && !pt.length) { g.clearRect(0, 0, W, H); return; }
-    g.globalCompositeOperation = 'destination-out'; g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'lighter';
-    for (let i = rk.length - 1; i >= 0; i--) { const r = rk[i]; r.vy += 620 * dt; r.x += r.vx * dt; r.y += r.vy * dt;
-      g.fillStyle = r.c; g.beginPath(); g.arc(r.x, r.y, 2.6, 0, 7); g.fill();
-      if (r.vy >= -30) { boom(r); rk.splice(i, 1); } }
-    const dr = Math.pow(.32, dt);
-    for (let i = pt.length - 1; i >= 0; i--) { const q = pt[i]; q.age += dt; if (q.age >= q.life) { pt.splice(i, 1); continue; }
-      q.vx *= dr; q.vy = q.vy * dr + 210 * dt; q.x += q.vx * dt; q.y += q.vy * dt;
-      g.globalAlpha = Math.max(0, 1 - q.age / q.life); g.fillStyle = q.c; g.beginPath(); g.arc(q.x, q.y, q.z, 0, 7); g.fill(); }
-    g.globalAlpha = 1;
-  };
-  FIN.raf = requestAnimationFrame(loop);
-}
-function finaleStart() {
-  finClear();
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { confetti(70); return; }   // sin movimiento: solo el confeti de siempre
-  const at = (ms, f) => FIN.t.push(setTimeout(() => { if (S && S.phase === 'finished') f(); }, ms));
-  const tick = () => { try { Snd.play({ vary: true }); } catch (e) {} };
-  const win = S.players.some(x => x.rank === 1);
-  at(1150, tick); at(2750, tick);                        // caen el 3º y el 2º
-  if (!win) return;
-  at(4750, () => { tick(); confetti(150); finFireworks(); });   // ¡el campeón!
-  at(5300, () => confetti(70)); at(9500, () => confetti(60)); at(15000, () => confetti(40));
-}
+        /* ---------- FINAL: coreografía del podio (fuegos artificiales + confeti sincronizados con el CSS .fin) ---------- */
+        const FIN = { t: [], raf: 0, cv: null, rs: null };
+        function finClear() {
+            FIN.t.forEach(clearTimeout); FIN.t = [];
+            if (FIN.raf) cancelAnimationFrame(FIN.raf); FIN.raf = 0;
+            if (FIN.rs) removeEventListener('resize', FIN.rs); FIN.rs = null;
+            if (FIN.cv) FIN.cv.remove(); FIN.cv = null;
+        }
+        function finReset() { finClear(); window._finK = ''; }
+        function finFireworks() {
+            const cv = document.createElement('canvas'); cv.id = 'fw'; document.body.appendChild(cv); FIN.cv = cv;
+            const g = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2); let W = 0, H = 0;
+            FIN.rs = () => { W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+            FIN.rs(); addEventListener('resize', FIN.rs);
+            const cols = ['#ffc93c', '#ff5c4d', '#3fb6ff', '#3bd671', '#ff8a3d', '#ffffff', '#c084fc', '#ff7ac6'];
+            const rk = [], pt = [], t0 = performance.now(); let last = t0, nextL = t0, on = true;
+            const R = (a, b) => a + Math.random() * (b - a);
+            const launch = () => { const ty = H * R(.12, .5); rk.push({ x: W * R(.1, .9), y: H + 10, vx: R(-40, 40), vy: -Math.sqrt(2 * 620 * (H - ty)), c: cols[(Math.random() * cols.length) | 0] }); };
+            const boom = r => {
+                const n = 60 + ((Math.random() * 30) | 0), ring = Math.random() < .3, c2 = Math.random() < .5 ? cols[(Math.random() * cols.length) | 0] : r.c;
+                for (let i = 0; i < n && pt.length < 800; i++) {
+                    const a = Math.PI * 2 * i / n + R(-.05, .05), v = ring ? 230 : R(60, 330);
+                    pt.push({ x: r.x, y: r.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: R(1.1, 1.9), age: 0, c: i % 3 ? r.c : c2, z: R(1.6, 3.2) });
+                }
+            };
+            const loop = now => {
+                FIN.raf = requestAnimationFrame(loop);
+                const dt = Math.min(.05, (now - last) / 1000); last = now;
+                const secs = (now - t0) / 1000;
+                if (now >= nextL) { launch(); nextL = now + (secs < 9 ? R(260, 620) : R(1800, 2800)); if (secs < 9 && Math.random() < .35) launch(); }   // 9 s de gran final, luego uno cada par de segundos
+                if (!rk.length && !pt.length) { g.clearRect(0, 0, W, H); return; }
+                g.globalCompositeOperation = 'destination-out'; g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'lighter';
+                for (let i = rk.length - 1; i >= 0; i--) {
+                    const r = rk[i]; r.vy += 620 * dt; r.x += r.vx * dt; r.y += r.vy * dt;
+                    g.fillStyle = r.c; g.beginPath(); g.arc(r.x, r.y, 2.6, 0, 7); g.fill();
+                    if (r.vy >= -30) { boom(r); rk.splice(i, 1); }
+                }
+                const dr = Math.pow(.32, dt);
+                for (let i = pt.length - 1; i >= 0; i--) {
+                    const q = pt[i]; q.age += dt; if (q.age >= q.life) { pt.splice(i, 1); continue; }
+                    q.vx *= dr; q.vy = q.vy * dr + 210 * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+                    g.globalAlpha = Math.max(0, 1 - q.age / q.life); g.fillStyle = q.c; g.beginPath(); g.arc(q.x, q.y, q.z, 0, 7); g.fill();
+                }
+                g.globalAlpha = 1;
+            };
+            FIN.raf = requestAnimationFrame(loop);
+        }
+        function finaleStart() {
+            finClear();
+            if (matchMedia('(prefers-reduced-motion: reduce)').matches) { confetti(70); return; }   // sin movimiento: solo el confeti de siempre
+            const at = (ms, f) => FIN.t.push(setTimeout(() => { if (S && S.phase === 'finished') f(); }, ms));
+            const tick = () => { try { Snd.play({ vary: true }); } catch (e) { } };
+            const win = S.players.some(x => x.rank === 1);
+            at(1150, tick); at(2750, tick);                        // caen el 3º y el 2º
+            if (!win) return;
+            at(4750, () => { tick(); confetti(150); finFireworks(); });   // ¡el campeón!
+            at(5300, () => confetti(70)); at(9500, () => confetti(60)); at(15000, () => confetti(40));
+        }
 
-function foot() {
-  const st = S.stage;
-  const b = (a, t, dis) => `<button class="btn" data-a="${a}" ${dis ? 'disabled' : ''}>${t}</button>`;
-  if (S.phase === 'lobby') return b('start', ic('play') + ' Iniciar torneo') + ' ';
-  if (S.phase === 'ready') {
-    const pend = st.matches.filter(m => m.state === 'pending').length;
-    return b('round', `${ic('play')} Iniciar ${tx(st.name)}` + (st.seq && st.matches.length > 1 ? ` (partido ${st.matches.length - pend + 1}/${st.matches.length})` : ''));
-  }
-  if (S.phase === 'stageEnd') return b('next', S.timeUp ? ic('timer') + ' Terminar torneo por puntos' : 'Continuar ' + ic('arrow-right'));
-  if (S.phase === 'finished') return b('reset', ic('refresh') + ' Nuevo torneo (mismos jugadores)');
-  return b('', 'En curso…', true);
-}
-function render() {
-  $('#stg').innerHTML = S.stage && S.phase !== 'lobby' ? '· ' + tx(S.stage.name) : '';
-  applySide();
-  if (S.phase === 'lobby') { lobby(); $('#brk').innerHTML = ''; brkSig = ''; hqClose(); $('#rt').innerHTML = ''; rtShown = -1; finReset(); }
-  else if (S.phase === 'finished') {
-    hqClose(); $('#rt').innerHTML = '';
-    const fk = S.players.filter(p => p.rank && p.rank <= 3).map(p => p.id + ':' + p.rank).join('|') + '#' + S.players.length;
-    if (window._finK !== fk) { window._finK = fk; $('#app').innerHTML = podium(); finaleStart(); }   // el podio se arma (y anima) una sola vez
-    brkRender();
-    $('#side').innerHTML = groups();
-  } else {
-    window._cf = 0; if (window._finK) finReset();
-    if (S.hq) hqRender();                                   // finales: overlay a pantalla completa (no se reconstruye en cada voto)
-    else {
-      hqClose();
-      const st = S.stage; let h = '';
-      if (st) {
-        h += `<h2>${tx(st.name)} ${S.phase === 'intro' ? '<span class="cnt" id="ic"></span>' : ''}${S.timeUp ? ` <span class="err">${ic('timer')} Tiempo global agotado: terminará al acabar esta fase</span>` : ''}
+        function foot() {
+            const st = S.stage;
+            const b = (a, t, dis) => `<button class="btn" data-a="${a}" ${dis ? 'disabled' : ''}>${t}</button>`;
+            if (S.phase === 'lobby') return b('start', ic('play') + ' Iniciar torneo') + ' ';
+            if (S.phase === 'ready') {
+                const pend = st.matches.filter(m => m.state === 'pending').length;
+                return b('round', `${ic('play')} Iniciar ${tx(st.name)}` + (st.seq && st.matches.length > 1 ? ` (partido ${st.matches.length - pend + 1}/${st.matches.length})` : ''));
+            }
+            if (S.phase === 'stageEnd') return b('next', S.timeUp ? ic('timer') + ' Terminar torneo por puntos' : 'Continuar ' + ic('arrow-right'));
+            if (S.phase === 'finished') return b('reset', ic('refresh') + ' Nuevo torneo (mismos jugadores)');
+            return b('', 'En curso…', true);
+        }
+        function render() {
+            $('#stg').innerHTML = S.stage && S.phase !== 'lobby' ? '· ' + tx(S.stage.name) : '';
+            applySide();
+            if (S.phase === 'lobby') { lobby(); $('#brk').innerHTML = ''; brkSig = ''; hqClose(); $('#rt').innerHTML = ''; rtShown = -1; finReset(); }
+            else if (S.phase === 'finished') {
+                hqClose(); $('#rt').innerHTML = '';
+                const fk = S.players.filter(p => p.rank && p.rank <= 3).map(p => p.id + ':' + p.rank).join('|') + '#' + S.players.length;
+                if (window._finK !== fk) { window._finK = fk; $('#app').innerHTML = podium(); finaleStart(); }   // el podio se arma (y anima) una sola vez
+                brkRender();
+                $('#side').innerHTML = groups();
+            } else {
+                window._cf = 0; if (window._finK) finReset();
+                if (S.hq) hqRender();                                   // finales: overlay a pantalla completa (no se reconstruye en cada voto)
+                else {
+                    hqClose();
+                    const st = S.stage; let h = '';
+                    if (st) {
+                        h += `<h2>${tx(st.name)} ${S.phase === 'intro' ? '<span class="cnt" id="ic"></span>' : ''}${S.timeUp ? ` <span class="err">${ic('timer')} Tiempo global agotado: terminará al acabar esta fase</span>` : ''}
           ${S.phase === 'stageEnd' && S.roundTop.length ? `<button class="ib" data-rt style="margin-left:10px">${ic('fire')} Ver mayor puntaje</button>` : ''}</h2>
           <div class="grid">${st.matches.map(matchCard).join('')}</div>`;
-        if (st.bye) h += `<p>${ic('sleep')} Descansa: ${pl(st.bye, 28)} ${esc(P(st.bye).name)}</p>`;
-      }
-      $('#app').innerHTML = h;
-      brkRender();
-    }
-    rtSync();
-    $('#side').innerHTML = groups();
-  }
-  $('#foot').innerHTML = foot();
-}
+                        if (st.bye) h += `<p>${ic('sleep')} Descansa: ${pl(st.bye, 28)} ${esc(P(st.bye).name)}</p>`;
+                    }
+                    $('#app').innerHTML = h;
+                    brkRender();
+                }
+                rtSync();
+                $('#side').innerHTML = groups();
+            }
+            $('#foot').innerHTML = foot();
+        }
 
-/* ---------- editor de preguntas ---------- */
-function openQ() {
-  socket.emit('host:q:get');
-  $('#modal').innerHTML = `<div class="modal"><div><h3>Preguntas (JSON)</h3>
+        /* ---------- editor de preguntas ---------- */
+        function openQ() {
+            socket.emit('host:q:get');
+            $('#modal').innerHTML = `<div class="modal"><div><h3>Preguntas (JSON)</h3>
     <p style="color:var(--mut);margin:0 0 8px">Claves: repechaje, ronda1…ronda10, final (semis/3er puesto/final) y otras (comodín). Cada pregunta: {"q":"texto","o":["A","B","C","D"],"a":índiceCorrecto}</p>
     <textarea id="qt" spellcheck="false"></textarea><div id="qm" class="err"></div>
     <p><button class="btn" id="qs">Guardar</button> <button class="btn" id="qc" style="background:#fff">Cerrar</button></p></div></div>`;
-  $('#qs').onclick = () => socket.emit('host:q:save', $('#qt').value);
-  $('#qc').onclick = () => { $('#modal').innerHTML = ''; };
-}
-socket.on('host:q', t => { if ($('#qt')) $('#qt').value = t; });
-socket.on('host:q:saved', r => { if ($('#qm')) { $('#qm').style.color = r.ok ? '#7CFF6B' : ''; $('#qm').innerHTML = r.ok ? ic('check') + ` Guardado (${r.total} preguntas)` : ic('close') + ' ' + esc(r.err); } });
-</script></body></html>
+            $('#qs').onclick = () => socket.emit('host:q:save', $('#qt').value);
+            $('#qc').onclick = () => { $('#modal').innerHTML = ''; };
+        }
+        socket.on('host:q', t => { if ($('#qt')) $('#qt').value = t; });
+        socket.on('host:q:saved', r => { if ($('#qm')) { $('#qm').style.color = r.ok ? '#7CFF6B' : ''; $('#qm').innerHTML = r.ok ? ic('check') + ` Guardado (${r.total} preguntas)` : ic('close') + ' ' + esc(r.err); } });
+    </script>
+</body>
+
+</html>

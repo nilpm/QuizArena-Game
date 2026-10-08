@@ -20,7 +20,7 @@ function confetti(n = 40) { const cs = ['#ffc93c', '#f0523f', '#2d9cdb', '#1f9d8
   document.body.appendChild(w); setTimeout(() => w.remove(), 9000); }
 
 /* ---------- Sonido de clic (WebAudio, polifónico) ----------
-   · El mp3 (8 KB) se descarga UNA vez (cache del navegador) y se decodifica en memoria: cada clic es local, no gasta red.
+   · El mp3 (2 KB) se descarga UNA vez (cache del navegador) y se decodifica en memoria: cada clic es local, no gasta red.
    · Cada reproducción es una fuente independiente → se pueden solapar muchas a la vez (host).
    · Si WebAudio falla, se usa <audio> como respaldo (solo cliente). */
 const Snd = (() => {
